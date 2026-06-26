@@ -1,26 +1,443 @@
-@import "tailwindcss";
-
+/* ==========================================================================
+   1. Design System Tokens & Base Setup
+   ========================================================================== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+    --accent-color: #ffb400; 
+    --transition-speed: 0.4s;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+body.dark-theme {
+    --bg-color: #111111;
+    --card-bg: #1e1e1e;
+    --text-primary: #ffffff;
+    --text-secondary: #bbbbbb;
+    --border-color: #333333;
+    --modal-overlay: rgba(0, 0, 0, 0.85);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body.light-theme {
+    --bg-color: #f5f5f5;
+    --card-bg: #ffffff;
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --border-color: #e0e0e0;
+    --modal-overlay: rgba(0, 0, 0, 0.6);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: background-color var(--transition-speed), color var(--transition-speed);
 }
+
+/* ==========================================================================
+   2. Floating Right Navigation Layout 
+   ========================================================================== */
+.vertical-navbar {
+    position: fixed;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 100;
+}
+
+.nav-link {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: var(--card-bg);
+    border: none;
+    color: var(--text-primary);
+    font-size: 18px;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.nav-link span {
+    position: absolute;
+    right: 0;
+    padding: 0 25px;
+    height: 50px;
+    line-height: 50px;
+    border-radius: 30px;
+    background-color: var(--accent-color);
+    color: #fff;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 14px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: -1;
+}
+
+.nav-link:hover span {
+    opacity: 1;
+    visibility: visible;
+    right: 10px;
+}
+
+.nav-link.active, .nav-link:hover {
+    background-color: var(--accent-color);
+    color: #ffffff;
+}
+
+/* ==========================================================================
+   3. Animated Section Switching Mechanics
+   ========================================================================== */
+.content-wrapper {
+    width: 100%;
+    padding-right: 100px; 
+}
+
+.portfolio-section {
+    display: none;
+    padding: 60px 40px;
+    width: 100%;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.portfolio-section.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Watermarks */
+.title-container {
+    position: relative;
+    text-align: center;
+    width: 100%;
+    margin-bottom: 80px;
+}
+
+.section-title {
+    font-size: 3.5rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.accent-text { color: var(--accent-color); }
+
+.bg-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 7.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 10px;
+    z-index: -1;
+    user-select: none;
+}
+
+body.dark-theme .bg-watermark { color: rgba(255, 255, 255, 0.03); }
+body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
+
+.section-separator {
+    border: 0;
+    height: 1px;
+    background: var(--border-color);
+    margin: 60px auto;
+    max-width: 60%;
+}
+
+/* ==========================================================================
+   4. About Layout Dashboard
+   ========================================================================== */
+.about-main-container { max-width: 1140px; margin: 0 auto; }
+.about-grid-row { display: grid; grid-template-columns: 1fr; gap: 40px; }
+@media(min-width: 992px) { .about-grid-row { grid-template-columns: 1fr 1fr; } }
+.personal-info-col h3, .subsection-title { font-size: 1.6rem; text-transform: uppercase; font-weight: 700; margin-bottom: 25px; }
+.info-list-split { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 30px; }
+@media(min-width: 576px) { .info-list-split { grid-template-columns: 1fr 1fr; } }
+.info-list-split p { font-size: 0.95rem; color: var(--text-secondary); line-height: 2; }
+.info-list-split strong { color: var(--text-primary); font-weight: 600; }
+
+.download-cv-btn { display: inline-flex; align-items: center; border: 1px solid var(--accent-color); background: transparent; border-radius: 35px; cursor: pointer; text-decoration: none; overflow: hidden; padding-left: 25px; transition: all 0.3s; }
+.download-cv-btn .btn-text { color: var(--text-primary); text-transform: uppercase; font-weight: 600; letter-spacing: 1px; margin-right: 20px; font-size: 0.9rem; }
+.download-cv-btn .btn-icon-circle { width: 50px; height: 50px; background-color: var(--accent-color); color: #ffffff; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 16px; }
+.download-cv-btn:hover { background-color: var(--accent-color); }
+.download-cv-btn:hover .btn-text { color: #ffffff; }
+
+.stats-cards-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.stat-box { border: 1px solid var(--border-color); border-radius: 5px; padding: 25px 30px; transition: border-color 0.3s; }
+.stat-box:hover { border-color: var(--accent-color); }
+.stat-box h2 { font-size: 3rem; font-weight: 700; color: var(--accent-color); }
+.stat-box p { text-transform: uppercase; font-size: 0.85rem; color: var(--text-primary); line-height: 1.6; display: flex; align-items: center; gap: 15px; margin-top: 10px; }
+.dash-line { width: 30px; height: 1px; background-color: var(--text-secondary); display: inline-block; flex-shrink: 0; }
+
+.subsection-title { text-align: center; margin-bottom: 40px; }
+.circular-skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 30px; justify-items: center; }
+.skill-item { text-align: center; }
+.skill-item h4 { margin-top: 15px; font-size: 0.95rem; font-weight: 600; letter-spacing: 1px; }
+.circle-progress { width: 120px; height: 120px; border-radius: 50%; background: conic-gradient(var(--accent-color) calc(var(--percent) * 3.6deg), var(--border-color) 0deg); display: flex; align-items: center; justify-content: center; position: relative; }
+.circle-progress::before { content: ""; position: absolute; width: 104px; height: 104px; border-radius: 50%; background-color: var(--bg-color); transition: background-color var(--transition-speed); }
+.inner-val { position: relative; z-index: 2; font-size: 1.3rem; font-weight: 700; color: var(--text-primary); }
+
+.timeline-dual-grid { display: grid; grid-template-columns: 1fr; gap: 40px; }
+@media(min-width: 768px) { .timeline-dual-grid { grid-template-columns: 1fr 1fr; } }
+.timeline-column { display: flex; flex-direction: column; border-left: 1px solid var(--border-color); padding-left: 25px; margin-left: 15px; }
+.timeline-node { position: relative; margin-bottom: 40px; }
+.icon-badge { position: absolute; left: -46px; top: 0; width: 40px; height: 40px; background-color: var(--accent-color); color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.time-stamp { display: inline-block; padding: 3px 12px; background-color: var(--border-color); color: var(--text-primary); font-size: 0.75rem; font-weight: 600; border-radius: 20px; margin-bottom: 12px; text-transform: uppercase; }
+.timeline-node h5 { font-size: 1.1rem; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
+.place-tag { color: var(--text-secondary); font-weight: 500; font-size: 0.95rem; }
+.timeline-node p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+
+/* ==========================================================================
+   5. Interactive Portfolio Grid Layout
+   ========================================================================== */
+.portfolio-interactive-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
+    max-width: 1140px;
+    margin: 0 auto;
+}
+
+@media (min-width: 576px) { .portfolio-interactive-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 992px) { .portfolio-interactive-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.project-item-card {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    aspect-ratio: 3 / 2;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.project-item-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s ease;
+}
+
+/* Hover Zoom effect */
+.project-item-card:hover img {
+    transform: scale(1.1);
+}
+
+/* Solid Amber Hover Reveal Block */
+.project-item-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    padding: 20px;
+}
+
+.project-item-card:hover .project-item-overlay {
+    opacity: 1;
+}
+
+.overlay-title {
+    color: #ffffff;
+    font-size: 1.3rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transform: translateY(-15px);
+    transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    text-align: center;
+}
+
+.project-item-card:hover .overlay-title {
+    transform: translateY(0);
+}
+
+/* ==========================================================================
+   6. Modern Portfolio Lightbox Dialog Layout
+   ========================================================================== */
+.project-lightbox-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+    padding: 20px;
+}
+
+.project-lightbox-modal.is-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-inner-content {
+    background-color: #252525;
+    color: #ffffff;
+    width: 100%;
+    max-width: 700px;
+    border-radius: 15px;
+    padding: 30px;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.5);
+    transform: scale(0.85);
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.project-lightbox-modal.is-visible .modal-inner-content {
+    transform: scale(1);
+}
+
+.close-modal-trigger {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 35px;
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    transition: color 0.2s;
+    line-height: 1;
+}
+
+.close-modal-trigger:hover { color: var(--accent-color); }
+
+.modal-project-heading {
+    color: var(--accent-color);
+    font-size: 1.8rem;
+    font-weight: 800;
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 25px;
+    letter-spacing: 1px;
+}
+
+/* Details Multi-Column Block Grid Layout */
+.modal-details-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px 25px;
+    margin-bottom: 25px;
+    font-size: 0.95rem;
+    border-bottom: 1px solid #333;
+    padding-bottom: 20px;
+}
+
+@media (min-width: 576px) {
+    .modal-details-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.detail-meta-block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #eee;
+}
+
+.detail-meta-block i {
+    color: #999;
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+.detail-bold { font-weight: 600; color: #fff; }
+
+.detail-link {
+    color: var(--accent-color);
+    text-decoration: none;
+    font-weight: 600;
+}
+.detail-link:hover { text-decoration: underline; }
+
+.modal-media-frame {
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.modal-media-frame img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+}
+
+/* Scrollbar Tweaks for Lightbox Internal Form */
+.modal-inner-content::-webkit-scrollbar { width: 6px; }
+.modal-inner-content::-webkit-scrollbar-track { background: #1e1e1e; }
+.modal-inner-content::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+/* ==========================================================================
+   7. Contact Layout Framework
+   ========================================================================== */
+.contact-grid-wrapper { display: grid; grid-template-columns: 1fr; gap: 40px; max-width: 1140px; margin: 0 auto; }
+@media (min-width: 992px) { .contact-grid-wrapper { grid-template-columns: 1fr 2fr; } }
+.contact-details-column h3 { font-size: 1.6rem; text-transform: uppercase; font-weight: 700; margin-bottom: 15px; }
+.contact-details-column p { color: var(--text-secondary); line-height: 1.6; margin-bottom: 25px; }
+.meta-info-item { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+.icon-indicator { font-size: 26px; color: var(--accent-color); }
+.meta-text { display: flex; flex-direction: column; }
+.meta-label { text-transform: uppercase; font-size: 0.85rem; color: var(--text-secondary); }
+.meta-value { color: var(--text-primary); text-decoration: none; font-weight: 600; transition: color 0.2s; }
+.meta-value:hover { color: var(--accent-color); }
+.social-links-row { display: flex; gap: 12px; margin-top: 25px; }
+.social-circle-btn { width: 40px; height: 40px; border-radius: 50%; background-color: var(--card-bg); color: var(--text-primary); display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.3s ease; }
+.social-circle-btn:hover { background-color: var(--accent-color); color: #ffffff; }
+
+.form-input-row { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px; }
+@media (min-width: 768px) { .form-input-row { grid-template-columns: repeat(3, 1fr); } }
+.interactive-contact-form input, .interactive-contact-form textarea { width: 100%; padding: 14px 26px; background-color: var(--card-bg); border: 1px solid transparent; border-radius: 25px; color: var(--text-primary); font-family: inherit; transition: border-color 0.3s, background-color var(--transition-speed); }
+.interactive-contact-form textarea { border-radius: 20px; resize: none; width: 100%; }
+.form-textarea-row { margin-bottom: 25px; }
+.interactive-contact-form input:focus, .interactive-contact-form textarea:focus { outline: none; border-color: var(--accent-color); }
+
+.cta-submit-btn { display: inline-flex; align-items: center; border: 1px solid var(--accent-color); background: transparent; border-radius: 35px; cursor: pointer; overflow: hidden; padding-left: 25px; transition: all 0.3s; }
+.btn-text { color: var(--text-primary); text-transform: uppercase; font-weight: 600; letter-spacing: 1px; margin-right: 20px; }
+.btn-icon-circle { width: 50px; height: 50px; background-color: var(--accent-color); color: #ffffff; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 16px; }
+.cta-submit-btn:hover { background-color: var(--accent-color); }
+.cta-submit-btn:hover .btn-text { color: #ffffff; }
+
+.hero-container { display: flex; align-items: center; justify-content: center; gap: 60px; min-height: 85vh; }
+.hero-image-box { width: 400px; height: 500px; border-radius: 30px; overflow: hidden; border: 4px solid var(--card-bg); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+.hero-image-box img { width: 100%; height: 100%; object-fit: cover; }
+.hero-text-box h1 { font-size: 3.5rem; font-weight: 800; text-transform: uppercase; margin-bottom: 20px; }
+.hero-text-box p { color: var(--text-secondary); max-width: 550px; line-height: 1.8; margin-bottom: 30px; }
+.cta-button { padding: 12px 35px; background: transparent; color: var(--text-primary); border: 2px solid var(--accent-color); border-radius: 30px; font-weight: 600; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; }
+.cta-button:hover { background-color: var(--accent-color); color: #111111; }
+.theme-switcher-panel { position: fixed; top: 20px; right: 30px; z-index: 110; display: flex; gap: 5px; }
+.theme-btn { width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; background: var(--card-bg); color: var(--text-primary); }
+.theme-btn.active { background: var(--accent-color); color: #fff; }

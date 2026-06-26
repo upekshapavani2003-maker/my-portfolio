@@ -1,0 +1,180 @@
+{
+  "hero": {
+    "name": "Steve Milner",
+    "role": "Web Designer",
+    "description": "I am a front-end developer focused on crafting clean, modern, and user-friendly interfaces with responsive functionality.",
+    "photo": "/profile.jpg"
+  },
+  "about": {
+    "firstName": "Steve",
+    "lastName": "Milner",
+    "age": "27 Years",
+    "nationality": "Tunisian",
+    "freelance": "Available",
+    "address": "Tunis",
+    "phone": "+21621184010",
+    "email": "you@mail.com",
+    "skype": "steve.milner",
+    "languages": "English",
+    "cvLink": ""
+  },
+  "stats": [
+    {
+      "number": "12",
+      "label": "Years of Experience"
+    },
+    {
+      "number": "97",
+      "label": "Completed Projects"
+    },
+    {
+      "number": "81",
+      "label": "Happy Customers"
+    },
+    {
+      "number": "53",
+      "label": "Awards Won"
+    }
+  ],
+  "skills": [
+    {
+      "name": "HTML",
+      "percent": 25
+    },
+    {
+      "name": "JAVASCRIPT",
+      "percent": 89
+    },
+    {
+      "name": "CSS",
+      "percent": 70
+    },
+    {
+      "name": "PHP",
+      "percent": 66
+    },
+    {
+      "name": "WORDPRESS",
+      "percent": 95
+    },
+    {
+      "name": "JQUERY",
+      "percent": 50
+    },
+    {
+      "name": "ANGULAR",
+      "percent": 65
+    },
+    {
+      "name": "REACT",
+      "percent": 45
+    }
+  ],
+  "experience": [
+    {
+      "id": 1,
+      "type": "work",
+      "period": "2018 - PRESENT",
+      "role": "WEB DEVELOPER",
+      "place": "ENVATO",
+      "desc": "Lorem ipsum dolor sit amet, consectetur tempor incididunt ut labore adipisicing elit."
+    },
+    {
+      "id": 2,
+      "type": "work",
+      "period": "2013 - 2018",
+      "role": "UI/UX DESIGNER",
+      "place": "THEMEFOREST",
+      "desc": "Lorem incididunt dolor sit amet, consectetur eiusmod dunt doldt dol elit."
+    },
+    {
+      "id": 3,
+      "type": "education",
+      "period": "2015",
+      "role": "ENGINEERING DEGREE",
+      "place": "OXFORD UNIVERSITY",
+      "desc": "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do tempor."
+    },
+    {
+      "id": 4,
+      "type": "education",
+      "period": "2012",
+      "role": "MASTER DEGREE",
+      "place": "KIEV UNIVERSITY",
+      "desc": "Lorem ipsum dolor sit amet, consectetur elit, sed do eiusmod tempor."
+    }
+  ],
+  "projects": [
+    {
+      "id": 1,
+      "title": "Image Project",
+      "category": "Website",
+      "client": "Envato",
+      "languages": "HTML, CSS, Javascript",
+      "url": "https://www.envato.com",
+      "image": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop",
+      "thumb": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop"
+    },
+    {
+      "id": 2,
+      "title": "Slider Project",
+      "category": "Branding",
+      "client": "Themeforest",
+      "languages": "React, Sass",
+      "url": "https://themeforest.net",
+      "image": "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=800&auto=format&fit=crop",
+      "thumb": "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=600&auto=format&fit=crop"
+    },
+    {
+      "id": 3,
+      "title": "Mockup Project",
+      "category": "UI/UX Graphic Mockup",
+      "client": "Videohive",
+      "languages": "Figma, Adobe XD",
+      "url": "https://videohive.net",
+      "image": "https://images.unsplash.com/photo-1600132806370-bf17e65e942f?w=800&auto=format&fit=crop",
+      "thumb": "https://images.unsplash.com/photo-1600132806370-bf17e65e942f?w=600&auto=format&fit=crop"
+    },
+    {
+      "id": 4,
+      "title": "Finland Salary Calc",
+      "category": "Web Application",
+      "client": "Nordic Tech Agency",
+      "languages": "Next.js, TailwindCSS",
+      "url": "https://github.com",
+      "image": "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop",
+      "thumb": "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=600&auto=format&fit=crop"
+    },
+    {
+      "id": 5,
+      "title": "E-Commerce Template",
+      "category": "Online Store Front",
+      "client": "Shopify Partners",
+      "languages": "Liquid, JavaScript, CSS3",
+      "url": "https://www.shopify.com",
+      "image": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=800&auto=format&fit=crop",
+      "thumb": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=600&auto=format&fit=crop"
+    },
+    {
+      "id": 6,
+      "title": "Mobile App Wireframe",
+      "category": "iOS Application Layout",
+      "client": "CodeCanyon",
+      "languages": "Flutter, Dart",
+      "url": "https://codecanyon.net",
+      "image": "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&auto=format&fit=crop",
+      "thumb": "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=600&auto=format&fit=crop"
+    }
+  ],
+  "contact": {
+    "email": "steve@mail.com",
+    "phone": "+216 21 184 010",
+    "intro": "Feel free to get in touch with me. I am always open to discussing new projects, creative ideas or opportunities to be part of your visions.",
+    "social": {
+      "facebook": "#",
+      "twitter": "#",
+      "youtube": "#",
+      "dribbble": "#"
+    }
+  }
+}
