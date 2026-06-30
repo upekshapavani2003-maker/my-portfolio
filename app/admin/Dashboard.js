@@ -581,12 +581,6 @@ function ContactTab({ data, set }) {
             </div>
           ))}
         </div>
-        <hr style={S.divider} />
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-          To add a new platform, manually add a key to the <code>social</code> object in <code>portfolio.json</code>.
-          The icon uses Font Awesome's <code>fab fa-[platform]</code> class, so the key must match exactly
-          (e.g. <code>instagram</code>, <code>linkedin</code>, <code>dribbble</code>).
-        </p>
       </SectionCard>
     </>
   );
