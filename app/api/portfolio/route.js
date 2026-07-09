@@ -9,10 +9,19 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const auth = request.headers.get('Authorization');
+  const auth = request.headers.get('authorization'); // lowercase
+
   if (auth !== `Bearer ${process.env.ADMIN_SECRET}`) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    return Response.json(
+      {
+        error: 'Unauthorized',
+        received: auth,
+        expected: `Bearer ${process.env.ADMIN_SECRET}`,
+      },
+      { status: 401 }
+    );
   }
+
   const body = await request.json();
   writeFileSync(DATA, JSON.stringify(body, null, 2));
   return Response.json({ success: true });
