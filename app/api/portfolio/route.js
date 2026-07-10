@@ -9,24 +9,10 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const auth = request.headers.get('authorization');
-
-  console.log('--- ADMIN DEBUG ---');
-  console.log('authorization header:', auth);
-  console.log('ADMIN_SECRET exists:', !!process.env.ADMIN_SECRET);
-  console.log('ADMIN_SECRET value:', process.env.ADMIN_SECRET);
-
+  const auth = request.headers.get('Authorization');
   if (auth !== `Bearer ${process.env.ADMIN_SECRET}`) {
-    return Response.json(
-      {
-        error: 'Unauthorized',
-        authReceived: auth,
-        expected: `Bearer ${process.env.ADMIN_SECRET}`,
-      },
-      { status: 401 }
-    );
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
   const body = await request.json();
   writeFileSync(DATA, JSON.stringify(body, null, 2));
   return Response.json({ success: true });
