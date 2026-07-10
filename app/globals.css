@@ -37,7 +37,6 @@ body {
     transition: background-color var(--transition-speed), color var(--transition-speed);
 }
 
-/* Freezes background scrolling when a modal popup is open */
 body:has(.project-lightbox-modal.is-visible) {
     overflow: hidden;
     touch-action: none;
@@ -139,7 +138,6 @@ body:has(.project-lightbox-modal.is-visible) {
     padding: 60px 40px;
     width: 100%;
     opacity: 0;
-    /* CRITICAL FIX: Removed transform properties here so nested modals aren't broken */
     transition: opacity 0.4s ease;
 }
 
@@ -292,7 +290,7 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
 .timeline-node p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
 
 /* ==========================================================================
-   5. Interactive Portfolio Grid Layout
+   5. Interactive Portfolio Grid Layout (FIXED: Image Visibility Overlay)
    ========================================================================== */
 .portfolio-interactive-grid {
     display: grid;
@@ -307,11 +305,12 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
 
 .project-item-card {
     position: relative;
-    border-radius: 10px;
+    border-radius: 14px;
     overflow: hidden;
     cursor: pointer;
     aspect-ratio: 3 / 2;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    background-color: var(--card-bg);
 }
 
 .project-item-card img {
@@ -319,53 +318,60 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
     height: 100%;
     object-fit: cover;
     display: block;
-    transition: transform 0.4s ease;
+    transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .project-item-card:hover img {
-    transform: scale(1.1);
+    transform: scale(1.06);
 }
 
+/* CRITICAL OVERLAY UPDATE: Converted to an elegant title banner so pictures are perfectly displayed */
 .project-item-overlay {
     position: absolute;
-    top: 0;
+    bottom: 0;
     left: 0;
     width: 100%;
-    height: 100%;
-    background-color: var(--accent-color);
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
     display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    align-items: flex-end;
+    justify-content: flex-start;
     padding: 20px;
-}
-
-.project-item-card:hover .project-item-overlay {
-    opacity: 1;
+    opacity: 1; /* Keep visible on mobile/touch screens safely */
+    transition: background 0.3s ease;
 }
 
 .overlay-title {
     color: #ffffff;
-    font-size: 1.3rem;
+    font-size: 1.15rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    transform: translateY(-15px);
-    transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-    text-align: center;
+    letter-spacing: 0.5px;
+    text-align: left;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.4);
 }
 
-.project-item-card:hover .overlay-title {
-    transform: translateY(0);
-}
-
-/* Touch devices — always show overlay title */
-@media (hover: none) {
+/* Desktop Hover Interaction refinements */
+@media (hover: hover) {
     .project-item-overlay {
-        opacity: 0.85;
+        opacity: 0;
+        background: rgba(255, 180, 0, 0.9); /* Reverts safely to solid gold on mouse screens */
+        height: 100%;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.35s ease;
     }
+    
     .overlay-title {
+        text-align: center;
+        transform: translateY(-10px);
+        transition: transform 0.35s ease;
+    }
+    
+    .project-item-card:hover .project-item-overlay {
+        opacity: 1;
+    }
+    
+    .project-item-card:hover .overlay-title {
         transform: translateY(0);
     }
 }
@@ -380,7 +386,7 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
     width: 100vw;
     height: 100vh;
     background-color: var(--modal-overlay);
-    z-index: 2000; /* Brought to the absolute front */
+    z-index: 2000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -634,12 +640,12 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
 }
 
 /* ==========================================================================
-   9. Theme Switcher (Redesigned as an elegant, isolated floating toggle)
+   9. Theme Switcher Layout
    ========================================================================== */
 .theme-switcher-panel {
     position: fixed;
     top: 25px;
-    left: 25px; /* Completely isolated to the top left corner */
+    left: 25px;
     z-index: 1500;
     display: flex;
     gap: 6px;
