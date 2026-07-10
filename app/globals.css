@@ -37,6 +37,12 @@ body {
     transition: background-color var(--transition-speed), color var(--transition-speed);
 }
 
+/* Fix background scrolling when modal opens */
+body:has(.project-lightbox-modal.is-visible) {
+    overflow: hidden;
+    touch-action: none;
+}
+
 /* ==========================================================================
    2. Floating Right Navigation Layout 
    ========================================================================== */
@@ -372,8 +378,8 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     background-color: var(--modal-overlay);
     z-index: 1000;
     display: flex;
@@ -381,8 +387,9 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
     justify-content: center;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.4s ease, visibility 0.4s ease;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
     padding: 20px;
+    overscroll-behavior: contain;
 }
 
 .project-lightbox-modal.is-visible {
@@ -394,16 +401,16 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
     background-color: var(--card-bg);
     color: var(--text-primary);
     width: 100%;
-    max-width: 700px;
-    border-radius: 15px;
+    max-width: 650px;
+    border-radius: 16px;
     padding: 30px;
     position: relative;
-    max-height: 85vh;
+    max-height: 80vh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    box-shadow: 0 15px 50px rgba(0,0,0,0.25);
-    transform: scale(0.85);
-    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1);
 }
 
 .project-lightbox-modal.is-visible .modal-inner-content {
@@ -412,13 +419,12 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
 
 @media (max-width: 768px) {
     .project-lightbox-modal {
-        align-items: flex-start;
-        padding: 40px 15px 20px 15px;
+        padding: 15px;
     }
     .modal-inner-content {
-        max-height: 90vh;
-        padding: 30px 20px 20px 20px;
-        border-radius: 12px;
+        max-height: 85vh;
+        padding: 25px 20px;
+        border-radius: 14px;
     }
 }
 
@@ -440,30 +446,23 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
 
 .modal-project-heading {
     color: var(--accent-color);
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     font-weight: 800;
     text-align: center;
     text-transform: uppercase;
-    margin-bottom: 25px;
-    letter-spacing: 1px;
-    padding-right: 20px;
-}
-
-@media (max-width: 480px) {
-    .modal-project-heading {
-        font-size: 1.4rem;
-        margin-bottom: 20px;
-    }
+    margin-bottom: 20px;
+    letter-spacing: 0.5px;
+    padding-right: 25px;
 }
 
 .modal-details-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 12px 25px;
-    margin-bottom: 25px;
+    gap: 12px 20px;
+    margin-bottom: 20px;
     font-size: 0.95rem;
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 20px;
+    padding-bottom: 15px;
 }
 
 @media (min-width: 576px) {
@@ -479,7 +478,7 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
 
 .detail-meta-block i {
     color: var(--text-secondary);
-    font-size: 16px;
+    font-size: 15px;
     width: 20px;
     text-align: center;
     margin-top: 3px;
@@ -636,25 +635,25 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
 }
 
 /* ==========================================================================
-   9. Theme Switcher
+   9. Theme Switcher (Relocated to Top-Left corner to avoid collisions)
    ========================================================================== */
 .theme-switcher-panel {
     position: fixed;
-    top: 30px;
-    right: 30px;
+    top: 25px;
+    left: 25px; /* Moved to left side to stay completely out of right menu area */
     z-index: 110;
     display: flex;
-    gap: 10px;
+    gap: 8px;
     background-color: var(--card-bg);
-    padding: 6px;
+    padding: 5px;
     border-radius: 30px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
     border: 1px solid var(--border-color);
 }
 
 .theme-btn {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     border: none;
     cursor: pointer;
@@ -663,7 +662,7 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 15px;
     transition: all 0.3s ease;
 }
 
@@ -680,14 +679,14 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
 @media (max-width: 768px) {
     .theme-switcher-panel {
         top: 15px;
-        right: 20px;
-        gap: 6px;
+        left: 15px;
+        gap: 4px;
         padding: 4px;
     }
 
     .theme-btn {
-        width: 36px;
-        height: 36px;
-        font-size: 14px;
+        width: 34px;
+        height: 34px;
+        font-size: 13px;
     }
 }
