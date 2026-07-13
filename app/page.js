@@ -2,10 +2,11 @@
 import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import PortfolioSection from './components/PortfolioSection';
+import ColorSwitcher from './components/ColorSwitcher';
 
 export default function Home() {
-  const [data, setData]             = useState(null);
-  const [active, setActive]         = useState('home');
+  const [data, setData]   = useState(null);
+  const [active, setActive] = useState('home');
 
   useEffect(() => {
     fetch('/api/portfolio')
@@ -30,6 +31,7 @@ export default function Home() {
 
   return (
     <>
+      <ColorSwitcher />
       <Navbar activeSection={active} onNavigate={navigate} />
 
       <main className="content-wrapper">
