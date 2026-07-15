@@ -5,7 +5,7 @@ import PortfolioSection from './components/PortfolioSection';
 import ColorSwitcher from './components/ColorSwitcher';
 
 export default function Home() {
-  const [data, setData]   = useState(null);
+  const [data, setData]     = useState(null);
   const [active, setActive] = useState('home');
 
   useEffect(() => {
@@ -192,15 +192,17 @@ export default function Home() {
               </div>
             </div>
             <div className="contact-form-column">
-              <form className="interactive-contact-form"
-                onSubmit={e => e.preventDefault()}>
+              <form
+                className="interactive-contact-form"
+                action="https://formspree.io/f/mdaqangw"
+                method="POST">
                 <div className="form-input-row">
-                  <input type="text" placeholder="YOUR NAME" required />
-                  <input type="email" placeholder="YOUR EMAIL" required />
-                  <input type="text" placeholder="YOUR SUBJECT" required />
+                  <input type="text" name="name" placeholder="YOUR NAME" required />
+                  <input type="email" name="email" placeholder="YOUR EMAIL" required />
+                  <input type="text" name="subject" placeholder="YOUR SUBJECT" required />
                 </div>
                 <div className="form-textarea-row">
-                  <textarea placeholder="YOUR MESSAGE" rows="6" required></textarea>
+                  <textarea name="message" placeholder="YOUR MESSAGE" rows="6" required></textarea>
                 </div>
                 <button type="submit" className="cta-submit-btn">
                   <span className="btn-text">Send Message</span>
