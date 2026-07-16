@@ -79,7 +79,18 @@ export default function Home() {
                   <div className="info-right">
                     <p>Address: <strong>{about.address}</strong></p>
                     <p>Phone: <strong>{about.phone}</strong></p>
-                    <p>Email: <strong>{about.email}</strong></p>
+                    <p>Email: 
+                      <strong>
+                        <a 
+                          href={`https://mail.google.com/mail/?view=cm&to=${about.email}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ color: 'inherit', textDecoration: 'none' }}
+                        >
+                          {about.email}
+                        </a>
+                      </strong>
+                    </p>
                     <p>Skype: <strong>{about.skype}</strong></p>
                     <p>Languages: <strong>{about.languages}</strong></p>
                   </div>
@@ -173,7 +184,14 @@ export default function Home() {
                 <i className="fas fa-envelope-open icon-indicator"></i>
                 <div className="meta-text">
                   <span className="meta-label">Mail Me</span>
-                  <a href={`mailto:${contact.email}`} className="meta-value">{contact.email}</a>
+                  <a 
+                    href={`https://mail.google.com/mail/?view=cm&to=${contact.email}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="meta-value"
+                  >
+                    {contact.email}
+                  </a>
                 </div>
               </div>
               <div className="meta-info-item">
@@ -185,7 +203,7 @@ export default function Home() {
               </div>
               <div className="social-links-row">
                 {Object.entries(contact.social).map(([key, url]) => (
-                  <a key={key} href={url} target="_blank" className="social-circle-btn">
+                  <a key={key} href={url} target="_blank" rel="noopener noreferrer" className="social-circle-btn">
                     <i className={`fab fa-${key}`}></i>
                   </a>
                 ))}
