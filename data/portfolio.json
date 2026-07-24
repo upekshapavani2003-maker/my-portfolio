@@ -16,6 +16,7 @@
     "email": "you@mail.com",
     "skype": "steve.milner",
     "languages": "English",
+    "additionalLanguage": "Tamil",
     "cvLink": ""
   },
   "stats": [
@@ -102,6 +103,22 @@
       "role": "MASTER DEGREE",
       "place": "KIEV UNIVERSITY",
       "desc": "Lorem ipsum dolor sit amet, consectetur elit, sed do eiusmod tempor."
+    }
+  ],
+  "volunteer": [
+    {
+      "id": 1,
+      "role": "Web Developer Volunteer",
+      "organization": "Local NGO",
+      "period": "2022 - 2023",
+      "desc": "Built and maintained the organization's website, improving their online presence."
+    },
+    {
+      "id": 2,
+      "role": "Tech Mentor",
+      "organization": "Code for Community",
+      "period": "2021 - 2022",
+      "desc": "Mentored junior developers and students learning web development."
     }
   ],
   "projects": [

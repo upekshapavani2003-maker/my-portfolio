@@ -341,7 +341,8 @@ function AboutTab({ data, set }) {
           <Field label="Phone" value={a.phone} onChange={(v) => upd('phone', v)} placeholder="+216 21 184 010" />
           <Field label="Email" value={a.email} onChange={(v) => upd('email', v)} type="email" />
           <Field label="Skype" value={a.skype} onChange={(v) => upd('skype', v)} />
-          <Field label="Languages" value={a.languages} onChange={(v) => upd('languages', v)} placeholder="French, English" />
+          <Field label="Languages" value={a.languages} onChange={(v) => upd('languages', v)} placeholder="English, French, Tamil" />
+          <Field label="Additional Language" value={a.additionalLanguage || ''} onChange={(v) => upd('additionalLanguage', v)} placeholder="e.g. Spanish" />
         </div>
         <hr style={S.divider} />
         <Field
@@ -478,6 +479,44 @@ function ExperienceTab({ data, setArr, removeArr, addArr }) {
         })}
         <button style={S.addBtn} onClick={() => addArr('experience', { id: Date.now(), type: 'education', period: '2024', role: 'New Degree', place: 'University', desc: '' })}>
           + Add education
+        </button>
+      </SectionCard>
+    </>
+  );
+}
+
+// ─── TAB: VOLUNTEER ──────────────────────────────────────────────────────────
+function VolunteerTab({ data, setArr, removeArr, addArr }) {
+  return (
+    <>
+      <SectionCard title="Volunteer Work" icon="🤝">
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+          Shown below the Experience & Education section in About Me.
+        </p>
+        {(data.volunteer || []).map((v, i) => (
+          <div key={v.id} style={{ ...S.card, background: 'var(--bg-color)', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <span style={{ ...S.badge('work'), background: 'rgba(39,174,96,0.15)', color: '#27ae60' }}>
+                Volunteer #{i + 1}
+              </span>
+              <button style={S.deleteBtn} onClick={() => removeArr('volunteer', i)} aria-label="Remove">×</button>
+            </div>
+            <div style={S.grid2}>
+              <Field label="Role / Position" value={v.role} onChange={(val) => setArr('volunteer', i, 'role', val)} placeholder="Web Developer Volunteer" />
+              <Field label="Organization" value={v.organization} onChange={(val) => setArr('volunteer', i, 'organization', val)} placeholder="NGO / Community" />
+              <Field label="Period" value={v.period} onChange={(val) => setArr('volunteer', i, 'period', val)} placeholder="2022 - 2023" />
+            </div>
+            <Field label="Description" value={v.desc} onChange={(val) => setArr('volunteer', i, 'desc', val)} textarea placeholder="What did you do?" />
+          </div>
+        ))}
+        <button style={S.addBtn} onClick={() => addArr('volunteer', {
+          id: Date.now(),
+          role: 'New Role',
+          organization: 'Organization',
+          period: '2024',
+          desc: ''
+        })}>
+          + Add volunteer work
         </button>
       </SectionCard>
     </>
@@ -659,6 +698,7 @@ export default function Dashboard({ token }) {
     { id: 'stats',      label: 'Stats' },
     { id: 'skills',     label: 'Skills' },
     { id: 'experience', label: 'Experience' },
+    { id: 'volunteer',  label: 'Volunteer' },
     { id: 'projects',   label: 'Projects' },
     { id: 'contact',    label: 'Contact' },
   ];
@@ -703,6 +743,7 @@ export default function Dashboard({ token }) {
       {tab === 'stats'      && <StatsTab      data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
       {tab === 'skills'     && <SkillsTab     data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
       {tab === 'experience' && <ExperienceTab data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
+      {tab === 'volunteer'  && <VolunteerTab  data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
       {tab === 'projects'   && <ProjectsTab   data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
       {tab === 'contact'    && <ContactTab    data={data} set={set} />}
 

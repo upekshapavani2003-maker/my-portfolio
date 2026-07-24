@@ -288,6 +288,13 @@ body.light-theme .bg-watermark { color: rgba(0, 0, 0, 0.03); }
     .inner-val { font-size: 1rem; }
 }
 
+/* --- Centered Layout Framework for Timeline Layouts --- */
+.timeline-section-wrapper { 
+    max-width: 1140px; 
+    margin: 0 auto; 
+    padding: 0 15px;
+}
+
 .timeline-dual-grid { display: grid; grid-template-columns: 1fr; gap: 40px; }
 @media(min-width: 768px) { .timeline-dual-grid { grid-template-columns: 1fr 1fr; } }
 .timeline-column { display: flex; flex-direction: column; border-left: 1px solid var(--border-color); padding-left: 25px; margin-left: 15px; }

@@ -63,6 +63,7 @@ export default function Home() {
             <h1 className="section-title">About <span className="accent-text">Me</span></h1>
             <span className="bg-watermark">Resume</span>
           </div>
+          
           <div className="about-main-container">
             <div className="about-grid-row">
               {/* Personal info */}
@@ -93,6 +94,9 @@ export default function Home() {
                     </p>
                     <p>Skype: <strong>{about.skype}</strong></p>
                     <p>Languages: <strong>{about.languages}</strong></p>
+                    {about.additionalLanguage && (
+                      <p>Additional Language: <strong>{about.additionalLanguage}</strong></p>
+                    )}
                   </div>
                 </div>
                 <a href={about.cvLink} className="download-cv-btn">
@@ -102,6 +106,7 @@ export default function Home() {
                   </span>
                 </a>
               </div>
+              
               {/* Stats */}
               <div className="stats-cards-col">
                 {stats.map((s, i) => (
@@ -133,12 +138,14 @@ export default function Home() {
 
             <hr className="section-separator" />
 
-            {/* Timeline */}
+            {/* Timeline: Experience & Education */}
             <div className="timeline-section-wrapper">
               <h3 className="subsection-title">Experience & Education</h3>
               <div className="timeline-dual-grid">
+                
+                {/* Work Column */}
                 <div className="timeline-column">
-                  {experience.filter(e => e.type==='work').map(e => (
+                  {experience.filter(e => e.type === 'work').map(e => (
                     <div key={e.id} className="timeline-node">
                       <div className="icon-badge">
                         <i className="fas fa-briefcase"></i>
@@ -149,8 +156,10 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
+                
+                {/* Education Column */}
                 <div className="timeline-column">
-                  {experience.filter(e => e.type==='education').map(e => (
+                  {experience.filter(e => e.type === 'education').map(e => (
                     <div key={e.id} className="timeline-node">
                       <div className="icon-badge">
                         <i className="fas fa-graduation-cap"></i>
@@ -161,8 +170,34 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
+
               </div>
             </div>
+
+            {/* Volunteer Work Section (Nested safely inside layout wrapper) */}
+            {data.volunteer && data.volunteer.length > 0 && (
+              <>
+                <hr className="section-separator" />
+                <div className="timeline-section-wrapper">
+                  <h3 className="subsection-title">Volunteer Work</h3>
+                  <div className="timeline-dual-grid">
+                    <div className="timeline-column">
+                      {data.volunteer.map(v => (
+                        <div key={v.id} className="timeline-node">
+                          <div className="icon-badge">
+                            <i className="fas fa-hands-helping"></i>
+                          </div>
+                          <span className="time-stamp">{v.period}</span>
+                          <h5>{v.role} <span className="place-tag">— {v.organization}</span></h5>
+                          <p>{v.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
           </div>
         </section>
 
