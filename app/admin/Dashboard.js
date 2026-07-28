@@ -1,6 +1,45 @@
 'use client';
 import { useState, useEffect } from 'react';
 
+// Pre-defined professions and their associated skill sets
+const PROFESSION_SKILLS = {
+  'Software Engineer': [
+    'React / Next.js',
+    'Flutter',
+    'Go / Golang',
+    'PostgreSQL',
+    'Node.js',
+    'TypeScript',
+    'Cloud Computing (AWS/GCP)',
+    'Docker & Kubernetes'
+  ],
+  'Business Analyst': [
+    'Requirements Gathering',
+    'Data Analysis (SQL/Excel)',
+    'Agile / Scrum Methodologies',
+    'Process Mapping (BPMN)',
+    'User Stories & Backlog Grooming',
+    'Stakeholder Management',
+    'Tableau / PowerBI'
+  ],
+  'UI/UX Designer': [
+    'Figma',
+    'User Research',
+    'Wireframing & Prototyping',
+    'Information Architecture',
+    'Visual Design',
+    'Interaction Design'
+  ],
+  'Project Manager': [
+    'Resource Planning',
+    'Risk Management',
+    'Sprint Planning',
+    'Budget Tracking',
+    'Jira / Confluence',
+    'Communication'
+  ]
+};
+
 // ─── shared inline style helpers ────────────────────────────────────────────
 const S = {
   page: {
@@ -102,7 +141,6 @@ const S = {
     alignItems: 'center',
     gap: '8px',
   },
-  // Responsive grid — 1 col on mobile, 2 col on wider screens
   grid2: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -213,7 +251,6 @@ const S = {
     fontWeight: 600,
     fontSize: '0.82rem',
     cursor: 'pointer',
-    marginTop: '6px',
     fontFamily: 'inherit',
     textTransform: 'uppercase',
     letterSpacing: '1px',
@@ -392,16 +429,48 @@ function StatsTab({ data, setArr, removeArr, addArr }) {
 }
 
 // ─── TAB: SKILLS ─────────────────────────────────────────────────────────────
-function SkillsTab({ data, setArr, removeArr, addArr }) {
+function SkillsTab({ data, set, setArr, removeArr, addArr }) {
+  const activeProfession = data.profession || 'Software Engineer';
+  const availableSkills = PROFESSION_SKILLS[activeProfession] || [];
+  
+  const [selectedSkillToAdd, setSelectedSkillToAdd] = useState(availableSkills[0] || '');
+  const [selectedPercent, setSelectedPercent] = useState(50);
+
+  useEffect(() => {
+    if (availableSkills.length > 0) {
+      setSelectedSkillToAdd(availableSkills[0]);
+    }
+  }, [activeProfession]);
+
   return (
     <SectionCard title="Skills (circular progress)" icon="⚙️">
+      
+      {/* Profession profile option configuration */}
+      <div style={{ marginBottom: '1.25rem', paddingBottom: '1.25rem', borderBottom: '1px dashed var(--border-color)' }}>
+        <label style={S.label}>Select Profession Profile</label>
+        <select 
+          style={{ ...S.select, marginBottom: 0, maxWidth: '320px' }}
+          value={activeProfession}
+          onChange={(e) => set('profession', e.target.value)}
+        >
+          {Object.keys(PROFESSION_SKILLS).map((prof) => (
+            <option key={prof} value={prof}>{prof}</option>
+          ))}
+        </select>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
+          Changing this alters the available presets inside the "Add skill" selector below.
+        </p>
+      </div>
+
       <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
         Drag the slider to update each skill percentage.
       </p>
+      
+      {/* Dynamic Skill Elements */}
       {data.skills.map((s, i) => (
         <div key={i} style={S.itemRow}>
           <input
-            style={{ ...S.input, marginBottom: 0, width: '130px', flexShrink: 0 }}
+            style={{ ...S.input, marginBottom: 0, width: '180px', flexShrink: 0 }}
             value={s.name}
             onChange={(e) => setArr('skills', i, 'name', e.target.value)}
             placeholder="Skill name"
@@ -420,9 +489,52 @@ function SkillsTab({ data, setArr, removeArr, addArr }) {
           <button style={S.deleteBtn} onClick={() => removeArr('skills', i)}>×</button>
         </div>
       ))}
-      <button style={S.addBtn} onClick={() => addArr('skills', { name: 'New Skill', percent: 50 })}>
-        + Add skill
-      </button>
+
+      {/* Structured Quick Add Control Interface */}
+      <div style={{ 
+        marginTop: '1.5rem', 
+        padding: '12px', 
+        background: 'var(--bg-color)', 
+        border: '1px dashed var(--border-color)', 
+        borderRadius: '8px' 
+      }}>
+        <label style={{ ...S.label, marginBottom: '6px' }}>Add Prescribed Skill Platform</label>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+          
+          <select
+            style={{ ...S.select, marginBottom: 0, flex: 2, minWidth: '160px' }}
+            value={selectedSkillToAdd}
+            onChange={(e) => setSelectedSkillToAdd(e.target.value)}
+          >
+            {availableSkills.map((sk) => (
+              <option key={sk} value={sk}>{sk}</option>
+            ))}
+          </select>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '130px' }}>
+            <input 
+              type="range" 
+              min="0" 
+              max="100" 
+              style={S.range} 
+              value={selectedPercent} 
+              onChange={(e) => setSelectedPercent(+e.target.value)}
+            />
+            <span style={S.pctBadge}>{selectedPercent}%</span>
+          </div>
+
+          <button 
+            style={{ ...S.addBtn, marginTop: 0 }} 
+            onClick={() => {
+              if (!selectedSkillToAdd) return;
+              addArr('skills', { name: selectedSkillToAdd, percent: selectedPercent });
+            }}
+          >
+            + Add Skill
+          </button>
+        </div>
+      </div>
+
     </SectionCard>
   );
 }
@@ -564,7 +676,7 @@ function ProjectsTab({ data, setArr, removeArr, addArr }) {
 function ContactTab({ data, set }) {
   const c = data.contact;
   const upd = (k, v) => set('contact', { ...c, [k]: v });
-  const updSocial = (k, v) => set('contact', { ...c, social: { ...c.social, [k]: v } });
+  const updSocial = (k, v) => set('contact', { ...c.social, [k]: v });
 
   return (
     <>
@@ -680,7 +792,7 @@ export default function Dashboard({ token }) {
   return (
     <div style={S.page}>
 
-      {/* Header */}
+      {/* Header Layout Component */}
       <div style={S.header}>
         <h1 style={S.h1}>Portfolio <span style={S.accent}>CMS</span></h1>
         <div style={S.headerBtns}>
@@ -690,7 +802,7 @@ export default function Dashboard({ token }) {
         </div>
       </div>
 
-      {/* Tabs — scrollable on mobile */}
+      {/* Dynamic Navigation Tabs Layer */}
       <div style={{ overflowX: 'auto', marginBottom: '0' }}>
         <div style={{ ...S.tabRow, minWidth: 'max-content' }}>
           {TABS.map((t) => (
@@ -703,17 +815,17 @@ export default function Dashboard({ token }) {
 
       <div style={{ marginBottom: '1.5rem' }} />
 
-      {/* Tab content */}
+      {/* Tab content conditional router */}
       {tab === 'hero'       && <HeroTab       data={data} set={set} />}
       {tab === 'about'      && <AboutTab      data={data} set={set} />}
       {tab === 'stats'      && <StatsTab      data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
-      {tab === 'skills'     && <SkillsTab     data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
+      {tab === 'skills'     && <SkillsTab     data={data} set={set} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
       {tab === 'experience' && <ExperienceTab data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
       {tab === 'volunteer'  && <VolunteerTab  data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
       {tab === 'projects'   && <ProjectsTab   data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
       {tab === 'contact'    && <ContactTab    data={data} set={set} />}
 
-      {/* Floating save button */}
+      {/* Action panel pinned save button */}
       <div style={{ position: 'sticky', bottom: '1rem', display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
         <button style={{ ...S.btnPrimary, boxShadow: '0 4px 20px rgba(255,180,0,0.3)', padding: '12px 24px' }} onClick={save}>
           Save ↑
