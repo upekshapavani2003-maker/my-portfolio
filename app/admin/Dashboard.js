@@ -48,6 +48,7 @@ const S = {
     color: 'var(--text-primary)',
     fontFamily: "'Poppins','Segoe UI',sans-serif",
     padding: '1rem',
+    paddingBottom: '5rem',
   },
   header: {
     display: 'flex',
@@ -65,11 +66,10 @@ const S = {
     letterSpacing: '1px',
   },
   accent: { color: 'var(--accent-color)' },
-  headerBtns: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' },
   savedMsg: { fontSize: '0.85rem', color: '#2ecc71', fontWeight: 600 },
   errMsg: { fontSize: '0.85rem', color: '#e74c3c', fontWeight: 600 },
   btnPrimary: {
-    padding: '9px 20px',
+    padding: '12px 24px',
     background: 'var(--accent-color)',
     color: '#111',
     border: 'none',
@@ -81,23 +81,27 @@ const S = {
     letterSpacing: '1px',
     transition: 'opacity .2s',
     whiteSpace: 'nowrap',
+    touchAction: 'manipulation',
+    boxShadow: '0 4px 20px rgba(255,180,0,0.3)',
   },
   btnOutline: {
-    padding: '9px 16px',
+    padding: '12px 24px',
     background: 'transparent',
     color: 'var(--text-primary)',
     border: '1px solid var(--border-color)',
     borderRadius: '30px',
-    fontWeight: 600,
-    fontSize: '0.82rem',
+    fontWeight: 700,
+    fontSize: '0.85rem',
     cursor: 'pointer',
     textTransform: 'uppercase',
     letterSpacing: '1px',
     textDecoration: 'none',
     display: 'inline-flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: '6px',
     whiteSpace: 'nowrap',
+    touchAction: 'manipulation',
   },
   tabRow: {
     display: 'flex',
@@ -206,12 +210,6 @@ const S = {
     borderRadius: '8px',
     flexWrap: 'wrap',
   },
-  itemLabel: {
-    flex: 1,
-    fontSize: '0.88rem',
-    color: 'var(--text-primary)',
-    fontWeight: 600,
-  },
   rangeWrap: { flex: 1, display: 'flex', alignItems: 'center', gap: '8px', minWidth: '120px' },
   range: { flex: 1, accentColor: 'var(--accent-color)' },
   pctBadge: {
@@ -238,6 +236,7 @@ const S = {
     fontSize: '1rem',
     flexShrink: 0,
     fontFamily: 'inherit',
+    touchAction: 'manipulation',
   },
   addBtn: {
     display: 'inline-flex',
@@ -254,6 +253,7 @@ const S = {
     fontFamily: 'inherit',
     textTransform: 'uppercase',
     letterSpacing: '1px',
+    touchAction: 'manipulation',
   },
   badge: (type) => ({
     display: 'inline-block',
@@ -294,7 +294,7 @@ function Field({ label, value, onChange, textarea, type = 'text', placeholder = 
       {textarea ? (
         <textarea
           style={S.textarea}
-          value={value}
+          value={value || ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
         />
@@ -302,7 +302,7 @@ function Field({ label, value, onChange, textarea, type = 'text', placeholder = 
         <input
           style={S.input}
           type={type}
-          value={value}
+          value={value || ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
         />
@@ -325,7 +325,7 @@ function SectionCard({ title, icon, children }) {
 
 // ─── TAB: HERO ───────────────────────────────────────────────────────────────
 function HeroTab({ data, set }) {
-  const h = data.hero;
+  const h = data.hero || {};
   const upd = (k, v) => set('hero', { ...h, [k]: v });
   return (
     <SectionCard title="Hero section" icon="🏠">
@@ -361,7 +361,7 @@ function HeroTab({ data, set }) {
 
 // ─── TAB: ABOUT ──────────────────────────────────────────────────────────────
 function AboutTab({ data, set }) {
-  const a = data.about;
+  const a = data.about || {};
   const upd = (k, v) => set('about', { ...a, [k]: v });
   return (
     <SectionCard title="Personal info" icon="👤">
@@ -399,7 +399,7 @@ function StatsTab({ data, setArr, removeArr, addArr }) {
       <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
         The 4 numbers shown in the About section.
       </p>
-      {data.stats.map((s, i) => (
+      {(data.stats || []).map((s, i) => (
         <div key={i} style={S.itemRow}>
           <div style={{ width: '70px', flexShrink: 0 }}>
             <label style={{ ...S.label, marginBottom: '3px' }}>No.</label>
@@ -445,11 +445,10 @@ function SkillsTab({ data, set, setArr, removeArr, addArr }) {
   return (
     <SectionCard title="Skills (circular progress)" icon="⚙️">
       
-      {/* Profession profile option configuration */}
       <div style={{ marginBottom: '1.25rem', paddingBottom: '1.25rem', borderBottom: '1px dashed var(--border-color)' }}>
         <label style={S.label}>Select Profession Profile</label>
         <select 
-          style={{ ...S.select, marginBottom: 0, maxWidth: '320px' }}
+          style={{ ...S.select, marginBottom: 0, width: '100%', maxWidth: '320px' }}
           value={activeProfession}
           onChange={(e) => set('profession', e.target.value)}
         >
@@ -457,20 +456,16 @@ function SkillsTab({ data, set, setArr, removeArr, addArr }) {
             <option key={prof} value={prof}>{prof}</option>
           ))}
         </select>
-        <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
-          Changing this alters the available presets inside the "Add skill" selector below.
-        </p>
       </div>
 
       <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
         Drag the slider to update each skill percentage.
       </p>
       
-      {/* Dynamic Skill Elements */}
-      {data.skills.map((s, i) => (
+      {(data.skills || []).map((s, i) => (
         <div key={i} style={S.itemRow}>
           <input
-            style={{ ...S.input, marginBottom: 0, width: '180px', flexShrink: 0 }}
+            style={{ ...S.input, marginBottom: 0, width: '100%', flex: '1 1 180px' }}
             value={s.name}
             onChange={(e) => setArr('skills', i, 'name', e.target.value)}
             placeholder="Skill name"
@@ -490,19 +485,19 @@ function SkillsTab({ data, set, setArr, removeArr, addArr }) {
         </div>
       ))}
 
-      {/* Structured Quick Add Control Interface */}
+      {/* Stacked Responsive Add-Skill Control */}
       <div style={{ 
         marginTop: '1.5rem', 
-        padding: '12px', 
+        padding: '14px', 
         background: 'var(--bg-color)', 
         border: '1px dashed var(--border-color)', 
         borderRadius: '8px' 
       }}>
-        <label style={{ ...S.label, marginBottom: '6px' }}>Add Prescribed Skill Platform</label>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-          
+        <label style={{ ...S.label, marginBottom: '8px' }}>Add Prescribed Skill Platform</label>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <select
-            style={{ ...S.select, marginBottom: 0, flex: 2, minWidth: '160px' }}
+            style={{ ...S.select, marginBottom: 0, width: '100%' }}
             value={selectedSkillToAdd}
             onChange={(e) => setSelectedSkillToAdd(e.target.value)}
           >
@@ -511,7 +506,7 @@ function SkillsTab({ data, set, setArr, removeArr, addArr }) {
             ))}
           </select>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '130px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
             <input 
               type="range" 
               min="0" 
@@ -524,7 +519,13 @@ function SkillsTab({ data, set, setArr, removeArr, addArr }) {
           </div>
 
           <button 
-            style={{ ...S.addBtn, marginTop: 0 }} 
+            style={{ 
+              ...S.addBtn, 
+              width: '100%', 
+              justifyContent: 'center', 
+              padding: '10px 16px',
+              marginTop: '4px' 
+            }} 
             onClick={() => {
               if (!selectedSkillToAdd) return;
               addArr('skills', { name: selectedSkillToAdd, percent: selectedPercent });
@@ -544,7 +545,7 @@ function ExperienceTab({ data, setArr, removeArr, addArr }) {
   return (
     <>
       <SectionCard title="Work experience" icon="💼">
-        {data.experience.filter((e) => e.type === 'work').map((exp) => {
+        {(data.experience || []).filter((e) => e.type === 'work').map((exp) => {
           const i = data.experience.findIndex((x) => x.id === exp.id);
           return (
             <div key={exp.id} style={{ ...S.card, background: 'var(--bg-color)', marginBottom: '10px' }}>
@@ -555,7 +556,7 @@ function ExperienceTab({ data, setArr, removeArr, addArr }) {
               <div style={S.grid2}>
                 <Field label="Job title" value={exp.role} onChange={(v) => setArr('experience', i, 'role', v)} />
                 <Field label="Company" value={exp.place} onChange={(v) => setArr('experience', i, 'place', v)} />
-                <Field label="Period (e.g. 2018 - PRESENT)" value={exp.period} onChange={(v) => setArr('experience', i, 'period', v)} />
+                <Field label="Period" value={exp.period} onChange={(v) => setArr('experience', i, 'period', v)} />
               </div>
               <Field label="Description" value={exp.desc} onChange={(v) => setArr('experience', i, 'desc', v)} textarea />
             </div>
@@ -567,7 +568,7 @@ function ExperienceTab({ data, setArr, removeArr, addArr }) {
       </SectionCard>
 
       <SectionCard title="Education" icon="🎓">
-        {data.experience.filter((e) => e.type === 'education').map((exp) => {
+        {(data.experience || []).filter((e) => e.type === 'education').map((exp) => {
           const i = data.experience.findIndex((x) => x.id === exp.id);
           return (
             <div key={exp.id} style={{ ...S.card, background: 'var(--bg-color)', marginBottom: '10px' }}>
@@ -578,7 +579,7 @@ function ExperienceTab({ data, setArr, removeArr, addArr }) {
               <div style={S.grid2}>
                 <Field label="Degree" value={exp.role} onChange={(v) => setArr('experience', i, 'role', v)} />
                 <Field label="University" value={exp.place} onChange={(v) => setArr('experience', i, 'place', v)} />
-                <Field label="Year (e.g. 2015)" value={exp.period} onChange={(v) => setArr('experience', i, 'period', v)} />
+                <Field label="Year" value={exp.period} onChange={(v) => setArr('experience', i, 'period', v)} />
               </div>
               <Field label="Description" value={exp.desc} onChange={(v) => setArr('experience', i, 'desc', v)} textarea />
             </div>
@@ -596,9 +597,6 @@ function ExperienceTab({ data, setArr, removeArr, addArr }) {
 function VolunteerTab({ data, setArr, removeArr, addArr }) {
   return (
     <SectionCard title="Volunteer Work" icon="🤝">
-      <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-        Shown below Experience & Education in About Me.
-      </p>
       {(data.volunteer || []).map((v, i) => (
         <div key={v.id} style={{ ...S.card, background: 'var(--bg-color)', marginBottom: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
@@ -608,11 +606,11 @@ function VolunteerTab({ data, setArr, removeArr, addArr }) {
             <button style={S.deleteBtn} onClick={() => removeArr('volunteer', i)}>×</button>
           </div>
           <div style={S.grid2}>
-            <Field label="Role / Position" value={v.role} onChange={(val) => setArr('volunteer', i, 'role', val)} placeholder="Web Developer Volunteer" />
-            <Field label="Organization" value={v.organization} onChange={(val) => setArr('volunteer', i, 'organization', val)} placeholder="NGO / Community" />
-            <Field label="Period" value={v.period} onChange={(val) => setArr('volunteer', i, 'period', val)} placeholder="2022 - 2023" />
+            <Field label="Role / Position" value={v.role} onChange={(val) => setArr('volunteer', i, 'role', val)} />
+            <Field label="Organization" value={v.organization} onChange={(val) => setArr('volunteer', i, 'organization', val)} />
+            <Field label="Period" value={v.period} onChange={(val) => setArr('volunteer', i, 'period', val)} />
           </div>
-          <Field label="Description" value={v.desc} onChange={(val) => setArr('volunteer', i, 'desc', val)} textarea placeholder="What did you do?" />
+          <Field label="Description" value={v.desc} onChange={(val) => setArr('volunteer', i, 'desc', val)} textarea />
         </div>
       ))}
       <button style={S.addBtn} onClick={() => addArr('volunteer', { id: Date.now(), role: 'New Role', organization: 'Organization', period: '2024', desc: '' })}>
@@ -626,10 +624,7 @@ function VolunteerTab({ data, setArr, removeArr, addArr }) {
 function ProjectsTab({ data, setArr, removeArr, addArr }) {
   return (
     <SectionCard title="Portfolio projects" icon="🖼️">
-      <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-        These appear in the portfolio grid. Clicking opens the lightbox modal.
-      </p>
-      {data.projects.map((proj, i) => (
+      {(data.projects || []).map((proj, i) => (
         <div key={proj.id} style={{ ...S.card, background: 'var(--bg-color)', marginBottom: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ ...S.badge('work'), background: 'rgba(255,180,0,0.1)' }}>Project #{i + 1}</span>
@@ -637,20 +632,15 @@ function ProjectsTab({ data, setArr, removeArr, addArr }) {
           </div>
           <div style={S.grid2}>
             <Field label="Title" value={proj.title} onChange={(v) => setArr('projects', i, 'title', v)} />
-            <Field label="Category" value={proj.category} onChange={(v) => setArr('projects', i, 'category', v)} placeholder="Website / UI/UX…" />
+            <Field label="Category" value={proj.category} onChange={(v) => setArr('projects', i, 'category', v)} />
             <Field label="Client" value={proj.client} onChange={(v) => setArr('projects', i, 'client', v)} />
-            <Field label="Tools used" value={proj.languages} onChange={(v) => setArr('projects', i, 'languages', v)} placeholder="HTML, CSS, JS" />
+            <Field label="Tools used" value={proj.languages} onChange={(v) => setArr('projects', i, 'languages', v)} />
           </div>
-          <Field label="Project URL" value={proj.url} onChange={(v) => setArr('projects', i, 'url', v)} placeholder="https://example.com" />
+          <Field label="Project URL" value={proj.url} onChange={(v) => setArr('projects', i, 'url', v)} />
           <div style={S.grid2}>
-            <Field label="Thumbnail URL (grid card)" value={proj.thumb} onChange={(v) => setArr('projects', i, 'thumb', v)} placeholder="https://…?w=600" />
-            <Field label="Full image URL (lightbox)" value={proj.image} onChange={(v) => setArr('projects', i, 'image', v)} placeholder="https://…?w=800" />
+            <Field label="Thumbnail URL" value={proj.thumb} onChange={(v) => setArr('projects', i, 'thumb', v)} />
+            <Field label="Full image URL" value={proj.image} onChange={(v) => setArr('projects', i, 'image', v)} />
           </div>
-          {proj.thumb && (
-            <div style={{ marginTop: '-6px', marginBottom: '8px' }}>
-              <img src={proj.thumb} alt="thumb" style={{ width: '100px', height: '66px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--border-color)' }} />
-            </div>
-          )}
         </div>
       ))}
       <button
@@ -674,9 +664,18 @@ function ProjectsTab({ data, setArr, removeArr, addArr }) {
 
 // ─── TAB: CONTACT ────────────────────────────────────────────────────────────
 function ContactTab({ data, set }) {
-  const c = data.contact;
+  const c = data.contact || { social: {} };
   const upd = (k, v) => set('contact', { ...c, [k]: v });
-  const updSocial = (k, v) => set('contact', { ...c.social, [k]: v });
+  
+  const updSocial = (platform, val) => {
+    set('contact', {
+      ...c,
+      social: {
+        ...(c.social || {}),
+        [platform]: val
+      }
+    });
+  };
 
   return (
     <>
@@ -685,31 +684,18 @@ function ContactTab({ data, set }) {
           <Field label="Email address" value={c.email} onChange={(v) => upd('email', v)} type="email" />
           <Field label="Phone number" value={c.phone} onChange={(v) => upd('phone', v)} placeholder="+94 77 000 0000" />
         </div>
-        <Field
-          label="Intro paragraph"
-          value={c.intro}
-          onChange={(v) => upd('intro', v)}
-          textarea
-          placeholder="Feel free to get in touch with me…"
-        />
+        <Field label="Intro paragraph" value={c.intro} onChange={(v) => upd('intro', v)} textarea />
       </SectionCard>
 
       <SectionCard title="Social links" icon="🔗">
-        <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-          Paste the full URL. Leave as # to hide.
-        </p>
         <div style={S.grid2}>
-          {Object.entries(c.social).map(([platform, url]) => (
+          {Object.entries(c.social || {}).map(([platform, url]) => (
             <div key={platform}>
-              <label style={S.label}>
-                {platform === 'facebook' ? '📘' : platform === 'twitter' ? '🐦' : platform === 'youtube' ? '📺' : '🎯'}
-                {' '}{platform.charAt(0).toUpperCase() + platform.slice(1)}
-              </label>
+              <label style={S.label}>{platform}</label>
               <input
                 style={S.input}
-                value={url}
+                value={url || ''}
                 onChange={(e) => updSocial(platform, e.target.value)}
-                placeholder="https://..."
               />
             </div>
           ))}
@@ -727,7 +713,7 @@ export default function Dashboard({ token }) {
   const [msgType, setMsgType] = useState('ok');
 
   useEffect(() => {
-    fetch('/api/portfolio')
+    fetch('/api/portfolio', { cache: 'no-store' })
       .then((r) => r.json())
       .then(setData)
       .catch(() => showMsg('Failed to load data', 'err'));
@@ -744,14 +730,14 @@ export default function Dashboard({ token }) {
 
   function setArr(key, index, field, value) {
     setData((d) => {
-      const arr = [...d[key]];
+      const arr = [...(d[key] || [])];
       arr[index] = { ...arr[index], [field]: value };
       return { ...d, [key]: arr };
     });
   }
 
   function removeArr(key, index) {
-    setData((d) => ({ ...d, [key]: d[key].filter((_, i) => i !== index) }));
+    setData((d) => ({ ...d, [key]: (d[key] || []).filter((_, i) => i !== index) }));
   }
 
   function addArr(key, item) {
@@ -792,17 +778,12 @@ export default function Dashboard({ token }) {
   return (
     <div style={S.page}>
 
-      {/* Header Layout Component */}
+      {/* Header */}
       <div style={S.header}>
         <h1 style={S.h1}>Portfolio <span style={S.accent}>CMS</span></h1>
-        <div style={S.headerBtns}>
-          {msg && <span style={msgType === 'ok' ? S.savedMsg : S.errMsg}>{msg}</span>}
-          <a href="/" style={S.btnOutline}>← Site</a>
-          <button style={S.btnPrimary} onClick={save}>Save</button>
-        </div>
       </div>
 
-      {/* Dynamic Navigation Tabs Layer */}
+      {/* Dynamic Tabs */}
       <div style={{ overflowX: 'auto', marginBottom: '0' }}>
         <div style={{ ...S.tabRow, minWidth: 'max-content' }}>
           {TABS.map((t) => (
@@ -815,7 +796,7 @@ export default function Dashboard({ token }) {
 
       <div style={{ marginBottom: '1.5rem' }} />
 
-      {/* Tab content conditional router */}
+      {/* Active Tab Router */}
       {tab === 'hero'       && <HeroTab       data={data} set={set} />}
       {tab === 'about'      && <AboutTab      data={data} set={set} />}
       {tab === 'stats'      && <StatsTab      data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
@@ -825,11 +806,19 @@ export default function Dashboard({ token }) {
       {tab === 'projects'   && <ProjectsTab   data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
       {tab === 'contact'    && <ContactTab    data={data} set={set} />}
 
-      {/* Action panel pinned save button */}
-      <div style={{ position: 'sticky', bottom: '1rem', display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-        <button style={{ ...S.btnPrimary, boxShadow: '0 4px 20px rgba(255,180,0,0.3)', padding: '12px 24px' }} onClick={save}>
-          Save ↑
-        </button>
+      {/* Single Bottom Control Bar with Uniform Buttons */}
+      <div style={{ 
+        position: 'fixed', 
+        bottom: '1rem', 
+        right: '1rem', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '10px', 
+        zIndex: 2000 
+      }}>
+        {msg && <span style={msgType === 'ok' ? S.savedMsg : S.errMsg}>{msg}</span>}
+        <a href="/" style={S.btnOutline}>← Site</a>
+        <button style={S.btnPrimary} onClick={save}>Save ↑</button>
       </div>
 
     </div>

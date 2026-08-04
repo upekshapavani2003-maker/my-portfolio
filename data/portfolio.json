@@ -8,7 +8,7 @@
   "about": {
     "firstName": "Steve",
     "lastName": "Milner",
-    "age": "27 Years",
+    "age": "28 Years",
     "nationality": "Tunisian",
     "freelance": "Available",
     "address": "Tunis",
@@ -16,7 +16,7 @@
     "email": "you@mail.com",
     "skype": "steve.milner",
     "languages": "English",
-    "additionalLanguage": "Tamil",
+    "additionalLanguage": "French",
     "cvLink": ""
   },
   "stats": [
