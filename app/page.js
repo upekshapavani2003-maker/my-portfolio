@@ -29,6 +29,49 @@ export default function Home() {
 
   const { hero, about, stats, skills, experience, contact } = data;
 
+  // ── helpers ───────────────────────────────────────────────────────────────
+
+  // Render languages — supports both old string and new array format
+  function renderLanguages(langs) {
+    if (!langs) return '—';
+    if (typeof langs === 'string') return langs;
+    if (Array.isArray(langs)) {
+      return langs.map((l, i) => (
+        <span key={i}>
+          {l.name}
+          {l.level && (
+            <span style={{ fontSize: '0.8em', opacity: 0.75, marginLeft: '3px' }}>
+              ({l.level})
+            </span>
+          )}
+          {i < langs.length - 1 ? ', ' : ''}
+        </span>
+      ));
+    }
+    return '—';
+  }
+
+  // Build full phone from split or legacy field
+  function renderPhone(about) {
+    if (about.phoneCode && about.phoneNumber) {
+      return `${about.phoneCode} ${about.phoneNumber}`;
+    }
+    return about.phone || '—';
+  }
+
+  // Build full address from structured or legacy field
+  function renderAddress(about) {
+    if (about.addressLine1) {
+      return [
+        about.addressLine1,
+        about.addressLine2,
+        [about.city, about.postalCode].filter(Boolean).join(' '),
+        about.country,
+      ].filter(Boolean).join(', ');
+    }
+    return about.address || '—';
+  }
+
   return (
     <>
       <ColorSwitcher />
@@ -63,9 +106,9 @@ export default function Home() {
             <h1 className="section-title">About <span className="accent-text">Me</span></h1>
             <span className="bg-watermark">Resume</span>
           </div>
-          
           <div className="about-main-container">
             <div className="about-grid-row">
+
               {/* Personal info */}
               <div className="personal-info-col">
                 <h3>Personal Infos</h3>
@@ -74,39 +117,37 @@ export default function Home() {
                     <p>First Name: <strong>{about.firstName}</strong></p>
                     <p>Last Name: <strong>{about.lastName}</strong></p>
                     <p>Age: <strong>{about.age}</strong></p>
+                    {about.gender && (
+                      <p>Gender: <strong>{about.gender}</strong></p>
+                    )}
                     <p>Nationality: <strong>{about.nationality}</strong></p>
                     <p>Freelance: <strong>{about.freelance}</strong></p>
                   </div>
                   <div className="info-right">
-                    <p>Address: <strong>{about.address}</strong></p>
-                    <p>Phone: <strong>{about.phone}</strong></p>
-                    <p>Email: 
-                      <strong>
-                        <a 
-                          href={`https://mail.google.com/mail/?view=cm&to=${about.email}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          style={{ color: 'inherit', textDecoration: 'none' }}
-                        >
-                          {about.email}
-                        </a>
-                      </strong>
-                    </p>
-                    <p>Skype: <strong>{about.skype}</strong></p>
-                    <p>Languages: <strong>{about.languages}</strong></p>
-                    {about.additionalLanguage && (
-                      <p>Additional Language: <strong>{about.additionalLanguage}</strong></p>
+                    <p>Address: <strong>{renderAddress(about)}</strong></p>
+                    <p>Phone: <strong>{renderPhone(about)}</strong></p>
+                    <p>Email: <strong>{about.email}</strong></p>
+                    {about.skype && (
+                      <p>Skype: <strong>{about.skype}</strong></p>
                     )}
+                    <p>Languages: <strong>{renderLanguages(about.languages)}</strong></p>
                   </div>
                 </div>
-                <a href={about.cvLink} className="download-cv-btn">
+
+                {/* ── CV Download button — forces download instead of opening in browser ── */}
+                <a
+                  href={about.cvLink}
+                  className="download-cv-btn"
+                  download="CV.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer">
                   <span className="btn-text">Download CV</span>
                   <span className="btn-icon-circle">
                     <i className="fas fa-download"></i>
                   </span>
                 </a>
               </div>
-              
+
               {/* Stats */}
               <div className="stats-cards-col">
                 {stats.map((s, i) => (
@@ -138,14 +179,12 @@ export default function Home() {
 
             <hr className="section-separator" />
 
-            {/* Timeline: Experience & Education */}
+            {/* Experience & Education Timeline */}
             <div className="timeline-section-wrapper">
               <h3 className="subsection-title">Experience & Education</h3>
               <div className="timeline-dual-grid">
-                
-                {/* Work Column */}
                 <div className="timeline-column">
-                  {experience.filter(e => e.type === 'work').map(e => (
+                  {experience.filter(e => e.type==='work').map(e => (
                     <div key={e.id} className="timeline-node">
                       <div className="icon-badge">
                         <i className="fas fa-briefcase"></i>
@@ -156,10 +195,8 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-                
-                {/* Education Column */}
                 <div className="timeline-column">
-                  {experience.filter(e => e.type === 'education').map(e => (
+                  {experience.filter(e => e.type==='education').map(e => (
                     <div key={e.id} className="timeline-node">
                       <div className="icon-badge">
                         <i className="fas fa-graduation-cap"></i>
@@ -170,17 +207,16 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-
               </div>
             </div>
 
-            {/* Volunteer Work Section (Nested safely inside layout wrapper) */}
+            {/* Volunteer Work */}
             {data.volunteer && data.volunteer.length > 0 && (
               <>
                 <hr className="section-separator" />
-                <div className="timeline-section-wrapper">
+                <div className="volunteer-section-wrapper">
                   <h3 className="subsection-title">Volunteer Work</h3>
-                  <div className="timeline-dual-grid">
+                  <div className="volunteer-grid">
                     <div className="timeline-column">
                       {data.volunteer.map(v => (
                         <div key={v.id} className="timeline-node">
@@ -219,12 +255,10 @@ export default function Home() {
                 <i className="fas fa-envelope-open icon-indicator"></i>
                 <div className="meta-text">
                   <span className="meta-label">Mail Me</span>
-                  <a 
-                    href={`https://mail.google.com/mail/?view=cm&to=${contact.email}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="meta-value"
-                  >
+                  <a
+                    href={`https://mail.google.com/mail/?view=cm&to=${contact.email}`}
+                    target="_blank"
+                    className="meta-value">
                     {contact.email}
                   </a>
                 </div>
@@ -233,12 +267,14 @@ export default function Home() {
                 <i className="fas fa-phone-alt icon-indicator"></i>
                 <div className="meta-text">
                   <span className="meta-label">Call Me</span>
-                  <a href={`tel:${contact.phone}`} className="meta-value">{contact.phone}</a>
+                  <a href={`tel:${contact.phone}`} className="meta-value">
+                    {contact.phone}
+                  </a>
                 </div>
               </div>
               <div className="social-links-row">
                 {Object.entries(contact.social).map(([key, url]) => (
-                  <a key={key} href={url} target="_blank" rel="noopener noreferrer" className="social-circle-btn">
+                  <a key={key} href={url} target="_blank" className="social-circle-btn">
                     <i className={`fab fa-${key}`}></i>
                   </a>
                 ))}

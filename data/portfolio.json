@@ -8,16 +8,31 @@
   "about": {
     "firstName": "Steve",
     "lastName": "Milner",
-    "age": "28 Years",
+    "age": "27 Years",
     "nationality": "Tunisian",
     "freelance": "Available",
     "address": "Tunis",
     "phone": "+21621184010",
     "email": "you@mail.com",
     "skype": "steve.milner",
-    "languages": "English",
-    "additionalLanguage": "French",
-    "cvLink": ""
+    "languages": [
+      {
+        "name": "English",
+        "level": "Fluent"
+      },
+      {
+        "name": "French",
+        "level": "Fluent"
+      }
+    ],
+    "cvLink": "Pavani_cv.pdf",
+    "phoneCode": "+21",
+    "phoneNumber": "",
+    "addressLine1": "Tunis",
+    "city": "",
+    "postalCode": "",
+    "country": "",
+    "gender": "Male"
   },
   "stats": [
     {
@@ -188,10 +203,11 @@
     "phone": "+94757081465",
     "intro": "Feel free to get in touch with me. I am always open to discussing new projects, creative ideas or opportunities to be part of your visions.",
     "social": {
-      "facebook": "#",
+      "linkedin": "#",
       "twitter": "#",
       "youtube": "#",
       "dribbble": "#"
     }
-  }
+  },
+  "profession": "Business & Management"
 }
