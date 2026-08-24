@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const LANGUAGE_LEVELS = ['Native', 'Fluent', 'Proficient', 'Conversational', 'Basic'];
 
@@ -56,15 +56,22 @@ const S = {
   itemRow: {
     display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px',
     padding: '10px 12px', background: 'var(--bg-color)', border: '1px solid var(--border-color)',
-    borderRadius: '8px', flexWrap: 'wrap',
+    borderRadius: '8px', flexWrap: 'nowrap', // Prevents elements from wrapping vertically
   },
-  rangeWrap: { flex: 1, display: 'flex', alignItems: 'center', gap: '8px', minWidth: '120px' },
-  range: { flex: 1, accentColor: 'var(--accent-color)' },
-  pctBadge: { minWidth: '42px', textAlign: 'center', padding: '3px 8px', background: 'var(--accent-color)', color: '#111', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 },
+  rangeWrap: { 
+    flex: 1, display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 // Prevents layout collapse on mobile
+  },
+  range: { flex: 1, accentColor: 'var(--accent-color)', minWidth: 0 },
+  pctBadge: { 
+    minWidth: '42px', textAlign: 'center', padding: '3px 8px', 
+    background: 'var(--accent-color)', color: '#111', borderRadius: '20px', 
+    fontSize: '0.78rem', fontWeight: 700, flexShrink: 0 // Prevents overlap with remove button
+  },
   deleteBtn: {
     width: '30px', height: '30px', borderRadius: '50%', background: 'transparent',
     border: '1px solid var(--border-color)', color: '#e74c3c', cursor: 'pointer',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0, fontFamily: 'inherit',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', 
+    flexShrink: 0, fontFamily: 'inherit', // Retains fixed size on small viewports
   },
   addBtn: {
     display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 18px',
@@ -168,7 +175,6 @@ function AboutTab({ data, set }) {
   return (
     <>
       <SectionCard title="Personal info" icon="👤">
-
         <div style={S.sectionLabel}>Basic details</div>
         <div style={S.grid3}>
           <Field label="First name" value={a.firstName} onChange={(v) => upd('firstName', v)} />
@@ -251,7 +257,6 @@ function AboutTab({ data, set }) {
 
         <div style={S.sectionLabel}>CV</div>
         <Field label="CV download link (e.g. /cv.pdf)" value={a.cvLink} onChange={(v) => upd('cvLink', v)} placeholder="/cv.pdf" />
-
       </SectionCard>
     </>
   );
@@ -280,7 +285,7 @@ function StatsTab({ data, setArr, removeArr, addArr }) {
   );
 }
 
-// ─── TAB: SKILLS — loads from /api/skills dynamically ────────────────────────
+// ─── TAB: SKILLS ──────────────────────────────────────────────────────────────
 function SkillsTab({ data, set, setArr, removeArr, addArr }) {
   const [skillPool, setSkillPool]     = useState({});
   const [poolLoading, setPoolLoading] = useState(true);
@@ -288,9 +293,12 @@ function SkillsTab({ data, set, setArr, removeArr, addArr }) {
   const [selectedPct, setSelectedPct]     = useState(50);
   const [searchQuery, setSearchQuery]     = useState('');
 
-  // Load skill pool from API on mount
+  // Load skill pool with cache bypass
   useEffect(() => {
-    fetch('/api/skills')
+    fetch('/api/skills', {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
+    })
       .then(r => r.json())
       .then(d => { setSkillPool(d); setPoolLoading(false); })
       .catch(() => setPoolLoading(false));
@@ -301,12 +309,10 @@ function SkillsTab({ data, set, setArr, removeArr, addArr }) {
   const categorySkills = skillPool[activeCategory] || [];
   const alreadyAdded   = data.skills.map(s => s.name);
 
-  // Filter by search and remove already added
   const filteredSkills = categorySkills
     .filter(s => !alreadyAdded.includes(s))
     .filter(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  // Reset selected skill when category changes
   useEffect(() => { setSelectedSkill(''); setSearchQuery(''); }, [activeCategory]);
 
   function handleAdd() {
@@ -319,8 +325,6 @@ function SkillsTab({ data, set, setArr, removeArr, addArr }) {
 
   return (
     <SectionCard title="Skills (circular progress)" icon="⚙️">
-
-      {/* Step 1 — Category selector (loaded from JSON) */}
       <div style={{ marginBottom: '1.25rem', padding: '14px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '10px' }}>
         <label style={S.label}>Step 1 — Select a skill category</label>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>
@@ -338,7 +342,6 @@ function SkillsTab({ data, set, setArr, removeArr, addArr }) {
           ))}
         </select>
 
-        {/* Preview chips */}
         {categorySkills.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
             {categorySkills.slice(0, 5).map(s => (
@@ -351,14 +354,13 @@ function SkillsTab({ data, set, setArr, removeArr, addArr }) {
         )}
       </div>
 
-      {/* Step 2 — Current skills list */}
       <label style={{ ...S.label, marginBottom: '8px' }}>Step 2 — Your current skills (drag slider to adjust %)</label>
       {data.skills.length === 0 && (
         <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>No skills added yet. Use Step 3 below to add one.</p>
       )}
       {data.skills.map((s, i) => (
         <div key={i} style={S.itemRow}>
-          <span style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-primary)', flex: '0 0 auto', minWidth: '120px' }}>{s.name}</span>
+          <span style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-primary)', flex: '0 0 auto', minWidth: '100px' }}>{s.name}</span>
           <div style={S.rangeWrap}>
             <input type="range" min="0" max="100" style={S.range} value={s.percent} onChange={(e) => setArr('skills', i, 'percent', +e.target.value)} />
             <span style={S.pctBadge}>{s.percent}%</span>
@@ -367,7 +369,6 @@ function SkillsTab({ data, set, setArr, removeArr, addArr }) {
         </div>
       ))}
 
-      {/* Step 3 — Add skill with search */}
       <div style={{ marginTop: '1rem', padding: '14px', background: 'var(--bg-color)', border: '1px dashed var(--accent-color)', borderRadius: '10px' }}>
         <label style={S.label}>Step 3 — Add a skill from "{activeCategory || 'select a category above'}"</label>
 
@@ -377,7 +378,6 @@ function SkillsTab({ data, set, setArr, removeArr, addArr }) {
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>All skills from this category are already added!</p>
         ) : (
           <>
-            {/* Search box */}
             <div style={{ position: 'relative', marginBottom: '10px' }}>
               <input
                 style={{ ...S.input, marginBottom: 0, paddingLeft: '36px' }}
@@ -388,7 +388,6 @@ function SkillsTab({ data, set, setArr, removeArr, addArr }) {
               <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', fontSize: '14px' }}>🔍</span>
             </div>
 
-            {/* Skill dropdown */}
             <select
               style={{ ...S.select, marginBottom: '10px' }}
               value={selectedSkill}
@@ -402,14 +401,12 @@ function SkillsTab({ data, set, setArr, removeArr, addArr }) {
               <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>No skills match "{searchQuery}"</p>
             )}
 
-            {/* Percentage slider */}
             <label style={S.label}>Set percentage</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
               <input type="range" min="0" max="100" style={{ ...S.range, flex: 1 }} value={selectedPct} onChange={(e) => setSelectedPct(+e.target.value)} />
               <span style={S.pctBadge}>{selectedPct}%</span>
             </div>
 
-            {/* Preview */}
             {selectedSkill && (
               <div style={{ marginBottom: '10px', padding: '8px 12px', background: 'var(--card-bg)', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                 Will add: <strong style={{ color: 'var(--accent-color)' }}>{selectedSkill}</strong> at <strong style={{ color: 'var(--accent-color)' }}>{selectedPct}%</strong>
@@ -569,32 +566,52 @@ export default function Dashboard({ token }) {
   const [msg, setMsg]         = useState('');
   const [msgType, setMsgType] = useState('ok');
 
-  useEffect(() => {
-    fetch('/api/portfolio').then(r => r.json()).then(d => {
-      // Migrate: flat languages → array
-      if (d.about && !Array.isArray(d.about.languages)) {
-        const oldLangs = [];
-        if (d.about.languages) oldLangs.push({ name: d.about.languages, level: 'Fluent' });
-        if (d.about.additionalLanguage) oldLangs.push({ name: d.about.additionalLanguage, level: 'Fluent' });
-        d.about.languages = oldLangs;
-        delete d.about.additionalLanguage;
-      }
-      // Migrate: flat phone → split
-      if (d.about && !d.about.phoneCode && d.about.phone) {
-        const match = d.about.phone.match(/^(\+\d+)\s*(.*)$/);
-        if (match) { d.about.phoneCode = match[1]; d.about.phoneNumber = match[2]; }
-        else { d.about.phoneCode = ''; d.about.phoneNumber = d.about.phone; }
-      }
-      // Migrate: flat address → structured
-      if (d.about && !d.about.addressLine1 && d.about.address) {
-        d.about.addressLine1 = d.about.address;
-        d.about.city = ''; d.about.postalCode = ''; d.about.country = '';
-      }
-      setData(d);
-    }).catch(() => showMsg('Failed to load data', 'err'));
+  function showMsg(text, type = 'ok') { setMsg(text); setMsgType(type); setTimeout(() => setMsg(''), 3000); }
+
+  // Load portfolio data while disabling browser & Next.js caches
+  const loadPortfolioData = useCallback(() => {
+    fetch('/api/portfolio', {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
+    })
+      .then(r => r.json())
+      .then(d => {
+        // Migrate: flat languages → array
+        if (d.about && !Array.isArray(d.about.languages)) {
+          const oldLangs = [];
+          if (d.about.languages) oldLangs.push({ name: d.about.languages, level: 'Fluent' });
+          if (d.about.additionalLanguage) oldLangs.push({ name: d.about.additionalLanguage, level: 'Fluent' });
+          d.about.languages = oldLangs;
+          delete d.about.additionalLanguage;
+        }
+        // Migrate: flat phone → split
+        if (d.about && !d.about.phoneCode && d.about.phone) {
+          const match = d.about.phone.match(/^(\+\d+)\s*(.*)$/);
+          if (match) { d.about.phoneCode = match[1]; d.about.phoneNumber = match[2]; }
+          else { d.about.phoneCode = ''; d.about.phoneNumber = d.about.phone; }
+        }
+        // Migrate: flat address → structured
+        if (d.about && !d.about.addressLine1 && d.about.address) {
+          d.about.addressLine1 = d.about.address;
+          d.about.city = ''; d.about.postalCode = ''; d.about.country = '';
+        }
+        setData(d);
+      })
+      .catch(() => showMsg('Failed to load data', 'err'));
   }, []);
 
-  function showMsg(text, type = 'ok') { setMsg(text); setMsgType(type); setTimeout(() => setMsg(''), 3000); }
+  useEffect(() => {
+    loadPortfolioData();
+
+    // Refresh state automatically when switching back to this tab/window
+    const onFocus = () => loadPortfolioData();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [loadPortfolioData]);
+
   function set(key, value) { setData(d => ({ ...d, [key]: value })); }
   function setArr(key, index, field, value) {
     setData(d => { const arr = [...d[key]]; arr[index] = { ...arr[index], [field]: value }; return { ...d, [key]: arr }; });
@@ -610,8 +627,11 @@ export default function Dashboard({ token }) {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
       });
-      if (res.ok) showMsg('✓ Saved!', 'ok');
-      else showMsg('Save failed', 'err');
+      if (res.ok) {
+        showMsg('✓ Saved!', 'ok');
+      } else {
+        showMsg('Save failed', 'err');
+      }
     } catch { showMsg('Network error', 'err'); }
   }
 
