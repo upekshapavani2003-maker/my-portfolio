@@ -5,11 +5,12 @@ import PortfolioSection from './components/PortfolioSection';
 import ColorSwitcher from './components/ColorSwitcher';
 
 export default function Home() {
-  const [data, setData]     = useState(null);
-  const [active, setActive] = useState('home');
+  const [data, setData]         = useState(null);
+  const [active, setActive]     = useState('home');
+  const [formStatus, setFormStatus] = useState('idle'); // idle | sending | success | error
 
   useEffect(() => {
-    fetch('/api/portfolio')
+    fetch('/api/portfolio', { cache: 'no-store' })
       .then(r => r.json())
       .then(setData);
   }, []);
@@ -17,6 +18,35 @@ export default function Home() {
   function navigate(sectionId) {
     setActive(sectionId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Contact form submit handler ─────────────────────────────────────────
+  async function handleFormSubmit(e) {
+    e.preventDefault();
+    setFormStatus('sending');
+
+    const form     = e.target;
+    const formData = new FormData(form);
+
+    try {
+      const res = await fetch('https://formspree.io/f/mdaqangw', {
+        method:  'POST',
+        body:    formData,
+        headers: { Accept: 'application/json' },
+      });
+
+      if (res.ok) {
+        setFormStatus('success');
+        form.reset();
+        setTimeout(() => setFormStatus('idle'), 5000);
+      } else {
+        setFormStatus('error');
+        setTimeout(() => setFormStatus('idle'), 5000);
+      }
+    } catch {
+      setFormStatus('error');
+      setTimeout(() => setFormStatus('idle'), 5000);
+    }
   }
 
   if (!data) return (
@@ -30,8 +60,6 @@ export default function Home() {
   const { hero, about, stats, skills, experience, contact } = data;
 
   // ── helpers ───────────────────────────────────────────────────────────────
-
-  // Render languages — supports both old string and new array format
   function renderLanguages(langs) {
     if (!langs) return '—';
     if (typeof langs === 'string') return langs;
@@ -51,31 +79,75 @@ export default function Home() {
     return '—';
   }
 
-  // Build full phone from split or legacy field
-  function renderPhone(about) {
-    if (about.phoneCode && about.phoneNumber) {
-      return `${about.phoneCode} ${about.phoneNumber}`;
-    }
-    return about.phone || '—';
+  function renderPhone(a) {
+    if (a.phoneCode && a.phoneNumber) return `${a.phoneCode} ${a.phoneNumber}`;
+    return a.phone || '—';
   }
 
-  // Build full address from structured or legacy field
-  function renderAddress(about) {
-    if (about.addressLine1) {
+  function renderAddress(a) {
+    if (a.addressLine1) {
       return [
-        about.addressLine1,
-        about.addressLine2,
-        [about.city, about.postalCode].filter(Boolean).join(' '),
-        about.country,
+        a.addressLine1,
+        a.addressLine2,
+        [a.city, a.postalCode].filter(Boolean).join(' '),
+        a.country,
       ].filter(Boolean).join(', ');
     }
-    return about.address || '—';
+    return a.address || '—';
   }
 
   return (
     <>
       <ColorSwitcher />
       <Navbar activeSection={active} onNavigate={navigate} />
+
+      {/* ── Popup notification ── */}
+      {(formStatus === 'success' || formStatus === 'error') && (
+        <div style={{
+          position:        'fixed',
+          top:             '24px',
+          left:            '50%',
+          transform:       'translateX(-50%)',
+          zIndex:          9999,
+          background:      formStatus === 'success' ? '#1a2e1a' : '#2e1a1a',
+          border:          `1px solid ${formStatus === 'success' ? '#27ae60' : '#e74c3c'}`,
+          borderRadius:    '12px',
+          padding:         '14px 24px',
+          display:         'flex',
+          alignItems:      'center',
+          gap:             '12px',
+          boxShadow:       '0 8px 32px rgba(0,0,0,0.4)',
+          animation:       'slideDown 0.3s ease',
+          minWidth:        '280px',
+          maxWidth:        '90vw',
+        }}>
+          <span style={{ fontSize: '1.4rem' }}>
+            {formStatus === 'success' ? '✅' : '❌'}
+          </span>
+          <div>
+            <p style={{ color: '#fff', fontWeight: 700, margin: 0, fontSize: '0.95rem' }}>
+              {formStatus === 'success' ? 'Message sent!' : 'Something went wrong!'}
+            </p>
+            <p style={{ color: formStatus === 'success' ? '#7dcea0' : '#f1948a', margin: 0, fontSize: '0.82rem' }}>
+              {formStatus === 'success'
+                ? "Thanks for reaching out. I'll get back to you soon."
+                : 'Please try again or email me directly.'}
+            </p>
+          </div>
+          <button
+            onClick={() => setFormStatus('idle')}
+            style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '1.2rem', flexShrink: 0 }}>
+            ×
+          </button>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
 
       <main className="content-wrapper">
 
@@ -91,8 +163,7 @@ export default function Home() {
                 <span className="accent-text">{hero.role}</span>
               </h1>
               <p>{hero.description}</p>
-              <button className="cta-button"
-                onClick={() => navigate('about')}>
+              <button className="cta-button" onClick={() => navigate('about')}>
                 More About Me <i className="fas fa-arrow-right"></i>
               </button>
             </div>
@@ -117,9 +188,7 @@ export default function Home() {
                     <p>First Name: <strong>{about.firstName}</strong></p>
                     <p>Last Name: <strong>{about.lastName}</strong></p>
                     <p>Age: <strong>{about.age}</strong></p>
-                    {about.gender && (
-                      <p>Gender: <strong>{about.gender}</strong></p>
-                    )}
+                    {about.gender && <p>Gender: <strong>{about.gender}</strong></p>}
                     <p>Nationality: <strong>{about.nationality}</strong></p>
                     <p>Freelance: <strong>{about.freelance}</strong></p>
                   </div>
@@ -127,14 +196,10 @@ export default function Home() {
                     <p>Address: <strong>{renderAddress(about)}</strong></p>
                     <p>Phone: <strong>{renderPhone(about)}</strong></p>
                     <p>Email: <strong>{about.email}</strong></p>
-                    {about.skype && (
-                      <p>Skype: <strong>{about.skype}</strong></p>
-                    )}
+                    {about.skype && <p>Skype: <strong>{about.skype}</strong></p>}
                     <p>Languages: <strong>{renderLanguages(about.languages)}</strong></p>
                   </div>
                 </div>
-
-                {/* ── CV Download button — forces download instead of opening in browser ── */}
                 <a
                   href={about.cvLink}
                   className="download-cv-btn"
@@ -167,8 +232,7 @@ export default function Home() {
               <div className="circular-skills-grid">
                 {skills.map((s, i) => (
                   <div key={i} className="skill-item">
-                    <div className="circle-progress"
-                      style={{ '--percent': s.percent }}>
+                    <div className="circle-progress" style={{ '--percent': s.percent }}>
                       <div className="inner-val">{s.percent}%</div>
                     </div>
                     <h4>{s.name}</h4>
@@ -280,11 +344,9 @@ export default function Home() {
                 ))}
               </div>
             </div>
+
             <div className="contact-form-column">
-              <form
-                className="interactive-contact-form"
-                action="https://formspree.io/f/mdaqangw"
-                method="POST">
+              <form className="interactive-contact-form" onSubmit={handleFormSubmit}>
                 <div className="form-input-row">
                   <input type="text" name="name" placeholder="YOUR NAME" required />
                   <input type="email" name="email" placeholder="YOUR EMAIL" required />
@@ -293,10 +355,19 @@ export default function Home() {
                 <div className="form-textarea-row">
                   <textarea name="message" placeholder="YOUR MESSAGE" rows="6" required></textarea>
                 </div>
-                <button type="submit" className="cta-submit-btn">
-                  <span className="btn-text">Send Message</span>
+                <button
+                  type="submit"
+                  className="cta-submit-btn"
+                  disabled={formStatus === 'sending'}
+                  style={{
+                    opacity: formStatus === 'sending' ? 0.7 : 1,
+                    cursor:  formStatus === 'sending' ? 'wait' : 'pointer',
+                  }}>
+                  <span className="btn-text">
+                    {formStatus === 'sending' ? 'Sending...' : 'Send Message'}
+                  </span>
                   <span className="btn-icon-circle">
-                    <i className="fas fa-paper-plane"></i>
+                    <i className={`fas ${formStatus === 'sending' ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`}></i>
                   </span>
                 </button>
               </form>
