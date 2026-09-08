@@ -4,15 +4,58 @@ import Navbar from './components/Navbar';
 import PortfolioSection from './components/PortfolioSection';
 import ColorSwitcher from './components/ColorSwitcher';
 
+const SITE_KEY = '6LfLl6QtAAAAAH9swtIZuM4o1qetPSXnAqTGn5HV';
+
 export default function Home() {
-  const [data, setData]         = useState(null);
-  const [active, setActive]     = useState('home');
-  const [formStatus, setFormStatus] = useState('idle'); // idle | sending | success | error
+  const [data, setData]                 = useState(null);
+  const [active, setActive]             = useState('home');
+  const [formStatus, setFormStatus]     = useState('idle');
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaError, setCaptchaError] = useState(false);
 
   useEffect(() => {
+    // Load portfolio data
     fetch('/api/portfolio', { cache: 'no-store' })
       .then(r => r.json())
       .then(setData);
+
+    // Register global reCAPTCHA callbacks
+    window.onCaptchaSuccess = (token) => {
+      setCaptchaToken(token);
+      setCaptchaError(false);
+    };
+    window.onCaptchaExpired = () => {
+      setCaptchaToken('');
+    };
+
+    // Explicitly render reCAPTCHA after script loads
+    function renderCaptcha() {
+      const container = document.getElementById('recaptcha-container');
+      if (container && window.grecaptcha && container.childElementCount === 0) {
+        try {
+          window.grecaptcha.render('recaptcha-container', {
+            sitekey:            SITE_KEY,
+            callback:          'onCaptchaSuccess',
+            'expired-callback': 'onCaptchaExpired',
+          });
+        } catch (e) {
+          // already rendered
+        }
+      }
+    }
+
+    // Try multiple times to handle slow script loading
+    const t1 = setTimeout(renderCaptcha, 500);
+    const t2 = setTimeout(renderCaptcha, 1500);
+    const t3 = setTimeout(renderCaptcha, 3000);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      delete window.onCaptchaSuccess;
+      delete window.onCaptchaExpired;
+    };
   }, []);
 
   function navigate(sectionId) {
@@ -20,39 +63,59 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // ── Contact form submit handler ─────────────────────────────────────────
+  // ── Contact form submit handler ──────────────────────────────────────────
   async function handleFormSubmit(e) {
     e.preventDefault();
+
+    if (!captchaToken) {
+      setCaptchaError(true);
+      return;
+    }
+
+    setCaptchaError(false);
     setFormStatus('sending');
 
-    const form     = e.target;
-    const formData = new FormData(form);
+    const form = e.target;
 
     try {
-      const res = await fetch('https://formspree.io/f/mdaqangw', {
+      const res = await fetch('/api/contact', {
         method:  'POST',
-        body:    formData,
-        headers: { Accept: 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token:   captchaToken,
+          name:    form.querySelector('[name="name"]').value,
+          email:   form.querySelector('[name="email"]').value,
+          subject: form.querySelector('[name="subject"]').value,
+          message: form.querySelector('[name="message"]').value,
+        }),
       });
 
       if (res.ok) {
         setFormStatus('success');
         form.reset();
+        setCaptchaToken('');
+        window.grecaptcha?.reset();
         setTimeout(() => setFormStatus('idle'), 5000);
       } else {
         setFormStatus('error');
+        window.grecaptcha?.reset();
+        setCaptchaToken('');
         setTimeout(() => setFormStatus('idle'), 5000);
       }
     } catch {
       setFormStatus('error');
+      window.grecaptcha?.reset();
+      setCaptchaToken('');
       setTimeout(() => setFormStatus('idle'), 5000);
     }
   }
 
   if (!data) return (
-    <div style={{ display:'flex', alignItems:'center',
-      justifyContent:'center', height:'100vh',
-      color:'var(--accent-color)', fontSize:'1.2rem' }}>
+    <div style={{
+      display: 'flex', alignItems: 'center',
+      justifyContent: 'center', height: '100vh',
+      color: 'var(--accent-color)', fontSize: '1.2rem',
+    }}>
       Loading...
     </div>
   );
@@ -104,22 +167,22 @@ export default function Home() {
       {/* ── Popup notification ── */}
       {(formStatus === 'success' || formStatus === 'error') && (
         <div style={{
-          position:        'fixed',
-          top:             '24px',
-          left:            '50%',
-          transform:       'translateX(-50%)',
-          zIndex:          9999,
-          background:      formStatus === 'success' ? '#1a2e1a' : '#2e1a1a',
-          border:          `1px solid ${formStatus === 'success' ? '#27ae60' : '#e74c3c'}`,
-          borderRadius:    '12px',
-          padding:         '14px 24px',
-          display:         'flex',
-          alignItems:      'center',
-          gap:             '12px',
-          boxShadow:       '0 8px 32px rgba(0,0,0,0.4)',
-          animation:       'slideDown 0.3s ease',
-          minWidth:        '280px',
-          maxWidth:        '90vw',
+          position:     'fixed',
+          top:          '24px',
+          left:         '50%',
+          transform:    'translateX(-50%)',
+          zIndex:       9999,
+          background:   formStatus === 'success' ? '#1a2e1a' : '#2e1a1a',
+          border:       `1px solid ${formStatus === 'success' ? '#27ae60' : '#e74c3c'}`,
+          borderRadius: '12px',
+          padding:      '14px 24px',
+          display:      'flex',
+          alignItems:   'center',
+          gap:          '12px',
+          boxShadow:    '0 8px 32px rgba(0,0,0,0.4)',
+          animation:    'slideDown 0.3s ease',
+          minWidth:     '280px',
+          maxWidth:     '90vw',
         }}>
           <span style={{ fontSize: '1.4rem' }}>
             {formStatus === 'success' ? '✅' : '❌'}
@@ -136,7 +199,11 @@ export default function Home() {
           </div>
           <button
             onClick={() => setFormStatus('idle')}
-            style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '1.2rem', flexShrink: 0 }}>
+            style={{
+              marginLeft: 'auto', background: 'transparent',
+              border: 'none', color: '#888', cursor: 'pointer',
+              fontSize: '1.2rem', flexShrink: 0,
+            }}>
             ×
           </button>
         </div>
@@ -146,6 +213,20 @@ export default function Home() {
         @keyframes slideDown {
           from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .recaptcha-wrap {
+          margin: 12px 0;
+          transform: scale(0.8);
+          transform-origin: 0 0;
+          width: fit-content;
+        }
+        .recaptcha-error {
+          color: #e74c3c;
+          font-size: 0.85rem;
+          margin-top: 6px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
         }
       `}</style>
 
@@ -179,8 +260,6 @@ export default function Home() {
           </div>
           <div className="about-main-container">
             <div className="about-grid-row">
-
-              {/* Personal info */}
               <div className="personal-info-col">
                 <h3>Personal Infos</h3>
                 <div className="info-list-split">
@@ -213,7 +292,6 @@ export default function Home() {
                 </a>
               </div>
 
-              {/* Stats */}
               <div className="stats-cards-col">
                 {stats.map((s, i) => (
                   <div key={i} className="stat-box">
@@ -226,7 +304,6 @@ export default function Home() {
 
             <hr className="section-separator" />
 
-            {/* Skills */}
             <div className="skills-section-wrapper">
               <h3 className="subsection-title">My Skills</h3>
               <div className="circular-skills-grid">
@@ -243,7 +320,6 @@ export default function Home() {
 
             <hr className="section-separator" />
 
-            {/* Experience & Education Timeline */}
             <div className="timeline-section-wrapper">
               <h3 className="subsection-title">Experience & Education</h3>
               <div className="timeline-dual-grid">
@@ -274,7 +350,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Volunteer Work */}
             {data.volunteer && data.volunteer.length > 0 && (
               <>
                 <hr className="section-separator" />
@@ -297,7 +372,6 @@ export default function Home() {
                 </div>
               </>
             )}
-
           </div>
         </section>
 
@@ -339,7 +413,7 @@ export default function Home() {
               <div className="social-links-row">
                 {Object.entries(contact.social).map(([key, url]) => (
                   <a key={key} href={url} target="_blank" className="social-circle-btn">
-                    <i className={`fab fa-${key}`}></i>
+                    <i className={`fab fa-${key === 'linkedin' ? 'linkedin-in' : key}`}></i>
                   </a>
                 ))}
               </div>
@@ -355,6 +429,23 @@ export default function Home() {
                 <div className="form-textarea-row">
                   <textarea name="message" placeholder="YOUR MESSAGE" rows="6" required></textarea>
                 </div>
+
+                {/* ── reCAPTCHA "I'm not a robot" checkbox ── */}
+                <div className="recaptcha-wrap">
+                  <div
+                    id="recaptcha-container"
+                    className="g-recaptcha"
+                    data-sitekey={SITE_KEY}
+                    data-callback="onCaptchaSuccess"
+                    data-expired-callback="onCaptchaExpired"
+                  ></div>
+                  {captchaError && (
+                    <p className="recaptcha-error">
+                      ⚠️ Please confirm you are not a robot.
+                    </p>
+                  )}
+                </div>
+
                 <button
                   type="submit"
                   className="cta-submit-btn"
@@ -374,6 +465,25 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* ===== FOOTER ===== */}
+        <footer style={{
+          textAlign:  'center',
+          padding:    '2rem',
+          borderTop:  '1px solid var(--border-color)',
+          color:      'var(--text-secondary)',
+          fontSize:   '0.85rem',
+          lineHeight: '2',
+          marginTop:  '2rem',
+        }}>
+          <p style={{ marginBottom: '4px' }}>
+            Designed & developed by{' '}
+            <span style={{ color: 'var(--accent-color)', fontWeight: 700 }}>
+              CodeXCore Technologies
+            </span>
+          </p>
+          <p>© {new Date().getFullYear()} All rights reserved.</p>
+        </footer>
 
       </main>
     </>
