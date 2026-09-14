@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 const LANGUAGE_LEVELS = ['Native', 'Fluent', 'Proficient', 'Conversational', 'Basic'];
 
@@ -56,22 +56,22 @@ const S = {
   itemRow: {
     display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px',
     padding: '10px 12px', background: 'var(--bg-color)', border: '1px solid var(--border-color)',
-    borderRadius: '8px', flexWrap: 'nowrap', // Prevents elements from wrapping vertically
+    borderRadius: '8px', flexWrap: 'nowrap',
   },
   rangeWrap: { 
-    flex: 1, display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 // Prevents layout collapse on mobile
+    flex: 1, display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0
   },
   range: { flex: 1, accentColor: 'var(--accent-color)', minWidth: 0 },
   pctBadge: { 
     minWidth: '42px', textAlign: 'center', padding: '3px 8px', 
     background: 'var(--accent-color)', color: '#111', borderRadius: '20px', 
-    fontSize: '0.78rem', fontWeight: 700, flexShrink: 0 // Prevents overlap with remove button
+    fontSize: '0.78rem', fontWeight: 700, flexShrink: 0
   },
   deleteBtn: {
     width: '30px', height: '30px', borderRadius: '50%', background: 'transparent',
     border: '1px solid var(--border-color)', color: '#e74c3c', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', 
-    flexShrink: 0, fontFamily: 'inherit', // Retains fixed size on small viewports
+    flexShrink: 0, fontFamily: 'inherit',
   },
   addBtn: {
     display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 18px',
@@ -131,6 +131,158 @@ function SectionCard({ title, icon, children }) {
   );
 }
 
+// ─── CV Uploader Component ────────────────────────────────────────────────────
+function CVUploader({ token, currentPath, onUploaded }) {
+  const [dragging, setDragging]   = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState('');
+  const [uploadOk, setUploadOk]   = useState(false);
+  const fileInputRef              = useRef(null);
+
+  async function uploadFile(file) {
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      setUploadMsg('❌ Only PDF files allowed');
+      setUploadOk(false);
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadMsg('❌ File too large. Max 5MB');
+      setUploadOk(false);
+      return;
+    }
+
+    setUploading(true);
+    setUploadMsg('Uploading...');
+    setUploadOk(false);
+
+    const formData = new FormData();
+    formData.append('cv', file);
+
+    try {
+      const res = await fetch('/api/upload-cv', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        // Update the CV path in parent state
+        onUploaded('/api/cv');
+        // Show permanent success — no auto-hide
+        setUploadMsg('✅ CV uploaded! Click Save Changes to confirm.');
+        setUploadOk(true);
+      } else {
+        setUploadMsg(`❌ ${result.error}`);
+        setUploadOk(false);
+      }
+    } catch {
+      setUploadMsg('❌ Upload failed. Try again.');
+      setUploadOk(false);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    uploadFile(file);
+  }
+
+  function handleFileChange(e) {
+    const file = e.target.files[0];
+    uploadFile(file);
+  }
+
+  return (
+    <div>
+      {/* Current CV status */}
+      {currentPath && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px',
+          padding: '10px 14px', background: 'rgba(39,174,96,0.1)',
+          border: '1px solid rgba(39,174,96,0.3)', borderRadius: '8px',
+          marginBottom: '12px', fontSize: '0.85rem',
+        }}>
+          <span style={{ fontSize: '1.1rem' }}>📄</span>
+          <span style={{ color: 'var(--text-secondary)' }}>CV uploaded:</span>
+          <a
+            href="/api/cv"
+            target="_blank"
+            style={{ color: '#27ae60', fontWeight: 600, textDecoration: 'none' }}
+          >
+            View / Download ↗
+          </a>
+          <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+            ✅ Ready
+          </span>
+        </div>
+      )}
+
+      {/* Drag & Drop zone */}
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        style={{
+          border: `2px dashed ${dragging ? 'var(--accent-color)' : 'var(--border-color)'}`,
+          borderRadius: '10px',
+          padding: '32px 20px',
+          textAlign: 'center',
+          cursor: uploading ? 'wait' : 'pointer',
+          background: dragging ? 'rgba(255,180,0,0.05)' : 'var(--bg-color)',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>
+          {uploading ? '⏳' : dragging ? '📂' : '📁'}
+        </div>
+        <p style={{ color: 'var(--text-primary)', fontWeight: 600, marginBottom: '6px', fontSize: '0.95rem' }}>
+          {uploading ? 'Uploading...' : dragging ? 'Drop your PDF here!' : 'Drag & drop your CV here'}
+        </p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginBottom: '12px' }}>
+          or click to browse files
+        </p>
+        <span style={{
+          display: 'inline-block', padding: '6px 16px',
+          background: 'var(--accent-color)', color: '#111',
+          borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700,
+        }}>
+          PDF only · Max 5MB
+        </span>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,application/pdf"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+      </div>
+
+      {/* Upload status message */}
+      {uploadMsg && (
+        <div style={{
+          marginTop: '10px', padding: '10px 14px',
+          background: uploadOk ? 'rgba(39,174,96,0.1)' : 'rgba(231,76,60,0.1)',
+          border: `1px solid ${uploadOk ? 'rgba(39,174,96,0.3)' : 'rgba(231,76,60,0.3)'}`,
+          borderRadius: '8px', fontSize: '0.85rem',
+          color: uploadOk ? '#27ae60' : '#e74c3c',
+          fontWeight: 600,
+        }}>
+          {uploadMsg}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── TAB: HERO ───────────────────────────────────────────────────────────────
 function HeroTab({ data, set }) {
   const h = data.hero;
@@ -153,7 +305,7 @@ function HeroTab({ data, set }) {
 }
 
 // ─── TAB: ABOUT ──────────────────────────────────────────────────────────────
-function AboutTab({ data, set }) {
+function AboutTab({ data, set, token }) {
   const a = data.about;
   const upd = (k, v) => set('about', { ...a, [k]: v });
   const langs = Array.isArray(a.languages) ? a.languages : [];
@@ -254,9 +406,8 @@ function AboutTab({ data, set }) {
         <button style={{ ...S.addBtn, marginTop: '6px' }} onClick={addLang}>+ Add language</button>
 
         <hr style={S.divider} />
-
-        <div style={S.sectionLabel}>CV</div>
-        <Field label="CV download link (e.g. /cv.pdf)" value={a.cvLink} onChange={(v) => upd('cvLink', v)} placeholder="/cv.pdf" />
+        <div style={S.sectionLabel}>CV Upload</div>
+        <CVUploader token={token} currentPath={a.cvLink} onUploaded={(path) => upd('cvLink', path)} />
       </SectionCard>
     </>
   );
@@ -660,7 +811,7 @@ export default function Dashboard({ token }) {
       <div style={{ marginBottom: '1.5rem' }} />
 
       {tab === 'hero'       && <HeroTab       data={data} set={set} />}
-      {tab === 'about'      && <AboutTab      data={data} set={set} />}
+      {tab === 'about'      && <AboutTab      data={data} set={set} token={token} />}
       {tab === 'stats'      && <StatsTab      data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
       {tab === 'skills'     && <SkillsTab     data={data} set={set} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
       {tab === 'experience' && <ExperienceTab data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
