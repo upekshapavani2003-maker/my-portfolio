@@ -215,16 +215,15 @@ function CVUploader({ token, currentPath, onUploaded }) {
           <a
             href="/api/cv"
             target="_blank"
+            rel="noopener noreferrer"
+            download="CV.pdf"
             style={{ color: '#27ae60', fontWeight: 600, textDecoration: 'none' }}
           >
             View / Download ↗
           </a>
-          <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-            ✅ Ready
-          </span>
+          
         </div>
       )}
-
       {/* Drag & Drop zone */}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}

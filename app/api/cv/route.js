@@ -16,7 +16,6 @@ export async function GET() {
       const base64 = await redis.get('cv_base64');
 
       if (!base64) {
-        // Fall back to file system if Redis has no CV yet
         try {
           buffer = readFileSync(join(process.cwd(), 'public', 'cv.pdf'));
         } catch {
@@ -37,7 +36,7 @@ export async function GET() {
       status: 200,
       headers: {
         'Content-Type':        'application/pdf',
-        'Content-Disposition': 'attachment; filename="CV.pdf"',
+        'Content-Disposition': 'inline; filename="CV.pdf"', 
         'Cache-Control':       'no-cache, no-store, must-revalidate',
       },
     });
