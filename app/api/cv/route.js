@@ -36,7 +36,7 @@ export async function GET() {
       status: 200,
       headers: {
         'Content-Type':        'application/pdf',
-        'Content-Disposition': 'inline; filename="CV.pdf"', 
+        'Content-Disposition': 'attachment; filename="CV.pdf"', 
         'Cache-Control':       'no-cache, no-store, must-revalidate',
       },
     });
