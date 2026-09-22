@@ -798,7 +798,6 @@ export default function Dashboard({ token }) {
     <div style={S.page}>
       <div style={S.header}>
         <h1 style={S.h1}>Portfolio <span style={S.accent}>CMS</span></h1>
-        {msg && <span style={{ fontWeight: 600, fontSize: '0.9rem', color: msgType === 'ok' ? '#2ecc71' : '#e74c3c' }}>{msg}</span>}
       </div>
 
       <div style={{ overflowX: 'auto' }}>
@@ -819,6 +818,21 @@ export default function Dashboard({ token }) {
       {tab === 'contact'    && <ContactTab    data={data} set={set} />}
 
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '12px 16px', background: 'var(--card-bg)', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px', zIndex: 200 }}>
+        {/* Save message appears right next to the button */}
+        {msg && (
+          <span style={{
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            color: msgType === 'ok' ? '#2ecc71' : '#e74c3c',
+            padding: '6px 14px',
+            background: msgType === 'ok' ? 'rgba(46,204,113,0.1)' : 'rgba(231,76,60,0.1)',
+            border: `1px solid ${msgType === 'ok' ? 'rgba(46,204,113,0.3)' : 'rgba(231,76,60,0.3)'}`,
+            borderRadius: '20px',
+            whiteSpace: 'nowrap',
+          }}>
+            {msg}
+          </span>
+        )}
         <a href="/" style={S.btnOutline}>← Site</a>
         <button style={S.btnPrimary} onClick={save}>Save Changes ↑</button>
       </div>

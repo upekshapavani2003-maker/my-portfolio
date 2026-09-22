@@ -23,6 +23,10 @@
       {
         "name": "French",
         "level": "Fluent"
+      },
+      {
+        "name": "German",
+        "level": "Proficient"
       }
     ],
     "cvLink": "/api/cv",
