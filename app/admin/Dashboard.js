@@ -142,14 +142,20 @@ function CVUploader({ token, currentPath, onUploaded }) {
   async function uploadFile(file) {
     if (!file) return;
 
-    if (file.type !== 'application/pdf') {
+    // Mobile browsers often send an empty or generic type, so also check the extension
+    const isPdf =
+      file.type === 'application/pdf' ||
+      (file.name || '').toLowerCase().endsWith('.pdf');
+
+    if (!isPdf) {
       setUploadMsg('❌ Only PDF files allowed');
       setUploadOk(false);
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadMsg('❌ File too large. Max 5MB');
+    // Vercel limits request bodies to about 4.5MB
+    if (file.size > 4 * 1024 * 1024) {
+      setUploadMsg('❌ File too large. Max 4MB');
       setUploadOk(false);
       return;
     }
@@ -171,9 +177,7 @@ function CVUploader({ token, currentPath, onUploaded }) {
       const result = await res.json();
 
       if (res.ok) {
-        // Update the CV path in parent state
         onUploaded('/api/cv');
-        // Show permanent success — no auto-hide
         setUploadMsg('✅ CV uploaded! Click Save Changes to confirm.');
         setUploadOk(true);
       } else {
@@ -185,24 +189,22 @@ function CVUploader({ token, currentPath, onUploaded }) {
       setUploadOk(false);
     } finally {
       setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   }
 
   function handleDrop(e) {
     e.preventDefault();
     setDragging(false);
-    const file = e.dataTransfer.files[0];
-    uploadFile(file);
+    uploadFile(e.dataTransfer.files[0]);
   }
 
   function handleFileChange(e) {
-    const file = e.target.files[0];
-    uploadFile(file);
+    uploadFile(e.target.files[0]);
   }
 
   return (
     <div>
-      {/* Current CV status */}
       {currentPath && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: '10px',
@@ -214,17 +216,13 @@ function CVUploader({ token, currentPath, onUploaded }) {
           <span style={{ color: 'var(--text-secondary)' }}>CV uploaded:</span>
           <a
             href="/api/cv"
-            target="_blank"
-            rel="noopener noreferrer"
-            download="CV.pdf"
             style={{ color: '#27ae60', fontWeight: 600, textDecoration: 'none' }}
           >
             View / Download ↗
           </a>
-          
         </div>
       )}
-      {/* Drag & Drop zone */}
+
       <div
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
@@ -254,7 +252,7 @@ function CVUploader({ token, currentPath, onUploaded }) {
           background: 'var(--accent-color)', color: '#111',
           borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700,
         }}>
-          PDF only · Max 5MB
+          PDF only · Max 4MB
         </span>
         <input
           ref={fileInputRef}
@@ -265,7 +263,6 @@ function CVUploader({ token, currentPath, onUploaded }) {
         />
       </div>
 
-      {/* Upload status message */}
       {uploadMsg && (
         <div style={{
           marginTop: '10px', padding: '10px 14px',

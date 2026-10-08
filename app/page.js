@@ -279,12 +279,11 @@ export default function Home() {
                     <p>Languages: <strong>{renderLanguages(about.languages)}</strong></p>
                   </div>
                 </div>
+
+                {/* ✅ UPDATED: simple link to /api/cv (no target="_blank", no download attribute) */}
                 <a
-                  href={about.cvLink}
-                  className="download-cv-btn"
-                  download="CV.pdf"
-                  target="_blank"
-                  rel="noopener noreferrer">
+                  href="/api/cv"
+                  className="download-cv-btn">
                   <span className="btn-text">Download CV</span>
                   <span className="btn-icon-circle">
                     <i className="fas fa-download"></i>
@@ -396,6 +395,7 @@ export default function Home() {
                   <a
                     href={`https://mail.google.com/mail/?view=cm&to=${contact.email}`}
                     target="_blank"
+                    rel="noopener noreferrer"
                     className="meta-value">
                     {contact.email}
                   </a>
@@ -412,7 +412,7 @@ export default function Home() {
               </div>
               <div className="social-links-row">
                 {Object.entries(contact.social).map(([key, url]) => (
-                  <a key={key} href={url} target="_blank" className="social-circle-btn">
+                  <a key={key} href={url} target="_blank" rel="noopener noreferrer" className="social-circle-btn">
                     <i className={`fab fa-${key === 'linkedin' ? 'linkedin-in' : key}`}></i>
                   </a>
                 ))}
