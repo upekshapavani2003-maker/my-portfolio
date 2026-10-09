@@ -58,19 +58,19 @@ const S = {
     padding: '10px 12px', background: 'var(--bg-color)', border: '1px solid var(--border-color)',
     borderRadius: '8px', flexWrap: 'nowrap',
   },
-  rangeWrap: { 
+  rangeWrap: {
     flex: 1, display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0
   },
   range: { flex: 1, accentColor: 'var(--accent-color)', minWidth: 0 },
-  pctBadge: { 
-    minWidth: '42px', textAlign: 'center', padding: '3px 8px', 
-    background: 'var(--accent-color)', color: '#111', borderRadius: '20px', 
+  pctBadge: {
+    minWidth: '42px', textAlign: 'center', padding: '3px 8px',
+    background: 'var(--accent-color)', color: '#111', borderRadius: '20px',
     fontSize: '0.78rem', fontWeight: 700, flexShrink: 0
   },
   deleteBtn: {
     width: '30px', height: '30px', borderRadius: '50%', background: 'transparent',
     border: '1px solid var(--border-color)', color: '#e74c3c', cursor: 'pointer',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', 
+    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem',
     flexShrink: 0, fontFamily: 'inherit',
   },
   addBtn: {
@@ -279,8 +279,185 @@ function CVUploader({ token, currentPath, onUploaded }) {
   );
 }
 
+// ─── Profile Photo Uploader ───────────────────────────────────────────────────
+function canvasToBlob(canvas, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error('Image compression failed'))),
+      'image/jpeg',
+      quality
+    );
+  });
+}
+
+// Resize + compress in the browser so phone photos stay small
+async function compressImage(file, maxDim = 1000, maxBytes = 650 * 1024) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error('Could not read this image. Try a JPG or PNG.'));
+      i.src = url;
+    });
+
+    let dim = maxDim;
+    let quality = 0.85;
+    let blob;
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const scale  = Math.min(1, dim / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff'; // PNG transparency becomes white in JPEG
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      blob = await canvasToBlob(canvas, quality);
+      if (blob.size <= maxBytes) break;
+
+      quality = Math.max(0.5, quality - 0.1);
+      dim = Math.round(dim * 0.85);
+    }
+    return blob;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function PhotoUploader({ token, currentPhoto, onUploaded }) {
+  const [dragging, setDragging]   = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState('');
+  const [uploadOk, setUploadOk]   = useState(false);
+  const fileInputRef              = useRef(null);
+
+  async function uploadFile(file) {
+    if (!file) return;
+
+    const isImage =
+      (file.type || '').startsWith('image/') ||
+      /\.(jpe?g|png|webp|heic|heif)$/i.test(file.name || '');
+
+    if (!isImage) {
+      setUploadMsg('❌ Please choose an image file (JPG, PNG, WebP)');
+      setUploadOk(false);
+      return;
+    }
+
+    setUploading(true);
+    setUploadMsg('Compressing and uploading...');
+    setUploadOk(false);
+
+    try {
+      const blob = await compressImage(file);
+
+      const formData = new FormData();
+      formData.append('photo', blob, 'profile.jpg');
+
+      const res = await fetch('/api/upload-photo', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        onUploaded(result.path);
+        setUploadMsg('✅ Photo uploaded! Click Save Changes to confirm.');
+        setUploadOk(true);
+      } else {
+        setUploadMsg(`❌ ${result.error}`);
+        setUploadOk(false);
+      }
+    } catch (err) {
+      setUploadMsg(`❌ ${err.message || 'Upload failed. Try again.'}`);
+      setUploadOk(false);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    setDragging(false);
+    uploadFile(e.dataTransfer.files[0]);
+  }
+
+  return (
+    <div style={{ marginBottom: '14px' }}>
+      {currentPhoto && (
+        <div style={{ marginBottom: '12px' }}>
+          <img
+            src={currentPhoto}
+            alt="Current profile"
+            style={{ width: '90px', height: '110px', objectFit: 'cover', borderRadius: '8px', border: '2px solid var(--accent-color)' }}
+          />
+        </div>
+      )}
+
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        style={{
+          border: `2px dashed ${dragging ? 'var(--accent-color)' : 'var(--border-color)'}`,
+          borderRadius: '10px',
+          padding: '28px 20px',
+          textAlign: 'center',
+          cursor: uploading ? 'wait' : 'pointer',
+          background: dragging ? 'rgba(255,180,0,0.05)' : 'var(--bg-color)',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        <div style={{ fontSize: '2.2rem', marginBottom: '8px' }}>
+          {uploading ? '⏳' : dragging ? '📂' : '🖼️'}
+        </div>
+        <p style={{ color: 'var(--text-primary)', fontWeight: 600, marginBottom: '6px', fontSize: '0.95rem' }}>
+          {uploading ? 'Uploading...' : dragging ? 'Drop your photo here!' : 'Drag & drop your photo here'}
+        </p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginBottom: '12px' }}>
+          or click to choose from your device
+        </p>
+        <span style={{
+          display: 'inline-block', padding: '6px 16px',
+          background: 'var(--accent-color)', color: '#111',
+          borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700,
+        }}>
+          JPG · PNG · WebP · auto-compressed
+        </span>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={(e) => uploadFile(e.target.files[0])}
+        />
+      </div>
+
+      {uploadMsg && (
+        <div style={{
+          marginTop: '10px', padding: '10px 14px',
+          background: uploadOk ? 'rgba(39,174,96,0.1)' : 'rgba(231,76,60,0.1)',
+          border: `1px solid ${uploadOk ? 'rgba(39,174,96,0.3)' : 'rgba(231,76,60,0.3)'}`,
+          borderRadius: '8px', fontSize: '0.85rem',
+          color: uploadOk ? '#27ae60' : '#e74c3c',
+          fontWeight: 600,
+        }}>
+          {uploadMsg}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── TAB: HERO ───────────────────────────────────────────────────────────────
-function HeroTab({ data, set }) {
+function HeroTab({ data, set, token }) {
   const h = data.hero;
   const upd = (k, v) => set('hero', { ...h, [k]: v });
   return (
@@ -290,12 +467,16 @@ function HeroTab({ data, set }) {
         <Field label="Role / title" value={h.role} onChange={(v) => upd('role', v)} />
       </div>
       <Field label="Short description" value={h.description} onChange={(v) => upd('description', v)} textarea />
-      <Field label="Profile photo path (e.g. /images/profile/profile.jpg)" value={h.photo} onChange={(v) => upd('photo', v)} placeholder="/images/profile/profile.jpg" />
-      {h.photo && (
-        <div style={{ marginTop: '4px', marginBottom: '14px' }}>
-          <img src={h.photo} alt="preview" style={{ width: '80px', height: '100px', objectFit: 'cover', borderRadius: '8px', border: '2px solid var(--accent-color)' }} />
-        </div>
-      )}
+
+      <div style={S.sectionLabel}>Profile photo</div>
+      <PhotoUploader token={token} currentPhoto={h.photo} onUploaded={(path) => upd('photo', path)} />
+
+      <Field
+        label="Or paste an image path / URL (optional)"
+        value={h.photo}
+        onChange={(v) => upd('photo', v)}
+        placeholder="/images/profile/profile.jpg"
+      />
     </SectionCard>
   );
 }
@@ -434,8 +615,8 @@ function StatsTab({ data, setArr, removeArr, addArr }) {
 
 // ─── TAB: SKILLS ──────────────────────────────────────────────────────────────
 function SkillsTab({ data, set, setArr, removeArr, addArr }) {
-  const [skillPool, setSkillPool]     = useState({});
-  const [poolLoading, setPoolLoading] = useState(true);
+  const [skillPool, setSkillPool]         = useState({});
+  const [poolLoading, setPoolLoading]     = useState(true);
   const [selectedSkill, setSelectedSkill] = useState('');
   const [selectedPct, setSelectedPct]     = useState(50);
   const [searchQuery, setSearchQuery]     = useState('');
@@ -713,6 +894,9 @@ export default function Dashboard({ token }) {
   const [msg, setMsg]         = useState('');
   const [msgType, setMsgType] = useState('ok');
 
+  // Tracks unsaved edits so an automatic reload never overwrites them
+  const dirtyRef = useRef(false);
+
   function showMsg(text, type = 'ok') { setMsg(text); setMsgType(type); setTimeout(() => setMsg(''), 3000); }
 
   // Load portfolio data while disabling browser & Next.js caches
@@ -726,6 +910,9 @@ export default function Dashboard({ token }) {
     })
       .then(r => r.json())
       .then(d => {
+        // If the user edited something while this request was running, keep their edits
+        if (dirtyRef.current) return;
+
         // Migrate: flat languages → array
         if (d.about && !Array.isArray(d.about.languages)) {
           const oldLangs = [];
@@ -753,18 +940,20 @@ export default function Dashboard({ token }) {
   useEffect(() => {
     loadPortfolioData();
 
-    // Refresh state automatically when switching back to this tab/window
-    const onFocus = () => loadPortfolioData();
+    // Refresh automatically when switching back to this tab/window,
+    // but only if there are no unsaved changes
+    const onFocus = () => { if (!dirtyRef.current) loadPortfolioData(); };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [loadPortfolioData]);
 
-  function set(key, value) { setData(d => ({ ...d, [key]: value })); }
+  function set(key, value) { dirtyRef.current = true; setData(d => ({ ...d, [key]: value })); }
   function setArr(key, index, field, value) {
+    dirtyRef.current = true;
     setData(d => { const arr = [...d[key]]; arr[index] = { ...arr[index], [field]: value }; return { ...d, [key]: arr }; });
   }
-  function removeArr(key, index) { setData(d => ({ ...d, [key]: d[key].filter((_, i) => i !== index) })); }
-  function addArr(key, item) { setData(d => ({ ...d, [key]: [...(d[key] || []), item] })); }
+  function removeArr(key, index) { dirtyRef.current = true; setData(d => ({ ...d, [key]: d[key].filter((_, i) => i !== index) })); }
+  function addArr(key, item) { dirtyRef.current = true; setData(d => ({ ...d, [key]: [...(d[key] || []), item] })); }
 
   async function save() {
     showMsg('Saving…', 'ok');
@@ -775,6 +964,7 @@ export default function Dashboard({ token }) {
         body: JSON.stringify(data),
       });
       if (res.ok) {
+        dirtyRef.current = false; // everything is saved now
         showMsg('✓ Saved!', 'ok');
       } else {
         showMsg('Save failed', 'err');
@@ -805,7 +995,7 @@ export default function Dashboard({ token }) {
 
       <div style={{ marginBottom: '1.5rem' }} />
 
-      {tab === 'hero'       && <HeroTab       data={data} set={set} />}
+      {tab === 'hero'       && <HeroTab       data={data} set={set} token={token} />}
       {tab === 'about'      && <AboutTab      data={data} set={set} token={token} />}
       {tab === 'stats'      && <StatsTab      data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
       {tab === 'skills'     && <SkillsTab     data={data} set={set} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
