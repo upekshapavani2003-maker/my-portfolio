@@ -3,6 +3,50 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 const LANGUAGE_LEVELS = ['Native', 'Fluent', 'Proficient', 'Conversational', 'Basic'];
 
+// Maximum number of digits allowed in a phone number
+const MAX_PHONE_DIGITS = 15;
+
+// Social platforms offered in the Contact tab.
+// The key is also used as the Font Awesome brand icon name on the public site (fab fa-<key>).
+const SOCIAL_PLATFORMS = [
+  'facebook', 'twitter', 'instagram', 'linkedin', 'youtube', 'github',
+  'whatsapp', 'telegram', 'pinterest', 'behance', 'dribbble', 'medium',
+  'discord', 'reddit', 'tiktok', 'snapchat',
+];
+
+// Sections that can be shown/hidden on the public site.
+// The ids must match the tab ids and the id="..." attributes on the public page sections.
+const SECTION_LIST = [
+  { id: 'hero',       label: 'Hero' },
+  { id: 'about',      label: 'About' },
+  { id: 'stats',      label: 'Stats' },
+  { id: 'skills',     label: 'Skills' },
+  { id: 'experience', label: 'Experience' },
+  { id: 'volunteer',  label: 'Volunteer' },
+  { id: 'projects',   label: 'Projects' },
+  { id: 'contact',    label: 'Contact' },
+];
+
+// Keeps only digits (and optionally one leading "+" and spaces), capped at maxDigits digits
+function sanitizePhone(value, { allowPlus = false, maxDigits = MAX_PHONE_DIGITS } = {}) {
+  let out = '';
+  let digits = 0;
+  for (const ch of String(value ?? '')) {
+    if (/\d/.test(ch)) {
+      if (digits >= maxDigits) continue;
+      digits++;
+      out += ch;
+    } else if (ch === ' ') {
+      if (out !== '' && !out.endsWith(' ')) out += ch;
+    } else if (allowPlus && ch === '+' && out === '') {
+      out += ch;
+    }
+  }
+  return out;
+}
+
+const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
 // ─── shared styles ────────────────────────────────────────────────────────────
 const S = {
   page: {
@@ -23,6 +67,7 @@ const S = {
     border: '1px solid var(--border-color)', borderRadius: '30px', fontWeight: 600,
     fontSize: '0.82rem', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px',
     textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap',
+    fontFamily: 'inherit',
   },
   tabRow: { display: 'flex', gap: '4px', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0' },
   tab: (active) => ({
@@ -98,13 +143,13 @@ const S = {
 };
 
 // ─── reusable components ──────────────────────────────────────────────────────
-function Field({ label, value, onChange, textarea, type = 'text', placeholder = '' }) {
+function Field({ label, value, onChange, textarea, type = 'text', placeholder = '', inputMode, maxLength }) {
   return (
     <div>
       <label style={S.label}>{label}</label>
       {textarea
         ? <textarea style={S.textarea} value={value ?? ''} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
-        : <input style={S.input} type={type} value={value ?? ''} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+        : <input style={S.input} type={type} value={value ?? ''} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} inputMode={inputMode} maxLength={maxLength} />
       }
     </div>
   );
@@ -128,6 +173,30 @@ function SectionCard({ title, icon, children }) {
       <div style={S.cardTitle}><span style={{ fontSize: '1rem' }}>{icon}</span>{title}</div>
       {children}
     </div>
+  );
+}
+
+// On/Off switch
+function Toggle({ checked, onChange, label }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      style={{
+        width: '46px', height: '26px', borderRadius: '20px', border: 'none', cursor: 'pointer',
+        background: checked ? 'var(--accent-color)' : 'var(--border-color)',
+        position: 'relative', transition: 'background .2s', flexShrink: 0, padding: 0,
+      }}
+    >
+      <span style={{
+        position: 'absolute', top: '3px', left: checked ? '23px' : '3px',
+        width: '20px', height: '20px', borderRadius: '50%', background: '#fff',
+        transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+      }} />
+    </button>
   );
 }
 
@@ -501,6 +570,8 @@ function AboutTab({ data, set, token }) {
     Basic: { bg: 'rgba(150,150,150,0.2)', color: 'var(--text-secondary)' },
   };
 
+  const phoneDigits = (a.phoneNumber ?? '').replace(/\D/g, '').length;
+
   return (
     <>
       <SectionCard title="Personal info" icon="👤">
@@ -520,11 +591,28 @@ function AboutTab({ data, set, token }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, 160px) 1fr', gap: '12px' }}>
           <div>
             <label style={S.label}>Country code</label>
-            <input style={S.input} value={a.phoneCode ?? ''} onChange={(e) => upd('phoneCode', e.target.value)} placeholder="+94" />
+            <input
+              style={S.input}
+              inputMode="tel"
+              maxLength={5}
+              value={a.phoneCode ?? ''}
+              onChange={(e) => upd('phoneCode', sanitizePhone(e.target.value, { allowPlus: true, maxDigits: 4 }).replace(/\s/g, ''))}
+              placeholder="+94"
+            />
           </div>
           <div>
-            <label style={S.label}>Phone number</label>
-            <input style={S.input} value={a.phoneNumber ?? ''} onChange={(e) => upd('phoneNumber', e.target.value)} placeholder="77 000 0000" />
+            <label style={S.label}>Phone number (max {MAX_PHONE_DIGITS} digits)</label>
+            <input
+              style={S.input}
+              inputMode="tel"
+              maxLength={MAX_PHONE_DIGITS + 5}
+              value={a.phoneNumber ?? ''}
+              onChange={(e) => upd('phoneNumber', sanitizePhone(e.target.value))}
+              placeholder="77 000 0000"
+            />
+            <p style={{ fontSize: '0.72rem', color: phoneDigits >= MAX_PHONE_DIGITS ? '#e74c3c' : 'var(--text-secondary)', marginTop: '-8px', marginBottom: '12px' }}>
+              {phoneDigits}/{MAX_PHONE_DIGITS} digits
+            </p>
           </div>
         </div>
 
@@ -539,12 +627,12 @@ function AboutTab({ data, set, token }) {
         <hr style={S.divider} />
 
         <div style={S.sectionLabel}>Address</div>
-        <Field label="Address line 1 (Street / House no.)" value={a.addressLine1 ?? ''} onChange={(v) => upd('addressLine1', v)} placeholder="123 Main Street" />
-        <Field label="Address line 2 (Area / District — optional)" value={a.addressLine2 ?? ''} onChange={(v) => upd('addressLine2', v)} placeholder="Colombo 03" />
+        <Field label="Address line 1 (Street / House no.)" value={a.addressLine1 ?? ''} onChange={(v) => upd('addressLine1', v)} />
+        <Field label="Address line 2 (Area / District — optional)" value={a.addressLine2 ?? ''} onChange={(v) => upd('addressLine2', v)} />
         <div style={S.grid3}>
-          <Field label="City" value={a.city ?? ''} onChange={(v) => upd('city', v)} placeholder="Colombo" />
-          <Field label="Postal code" value={a.postalCode ?? ''} onChange={(v) => upd('postalCode', v)} placeholder="00300" />
-          <Field label="Country" value={a.country ?? ''} onChange={(v) => upd('country', v)} placeholder="Sri Lanka" />
+          <Field label="City" value={a.city ?? ''} onChange={(v) => upd('city', v)} />
+          <Field label="Postal code" value={a.postalCode ?? ''} onChange={(v) => upd('postalCode', v)} />
+          <Field label="Country" value={a.country ?? ''} onChange={(v) => upd('country', v)} />
         </div>
 
         <hr style={S.divider} />
@@ -858,32 +946,146 @@ function ProjectsTab({ data, setArr, removeArr, addArr }) {
 
 // ─── TAB: CONTACT ────────────────────────────────────────────────────────────
 function ContactTab({ data, set }) {
-  const c = data.contact;
-  const upd       = (k, v) => set('contact', { ...c, [k]: v });
-  const updSocial = (k, v) => set('contact', { ...c, social: { ...c.social, [k]: v } });
+  const c      = data.contact;
+  const social = c.social || {};
+  const upd    = (k, v) => set('contact', { ...c, [k]: v });
+
+  // "Add a link" form state
+  const [platform, setPlatform]     = useState('');
+  const [customName, setCustomName] = useState('');
+  const [newUrl, setNewUrl]         = useState('');
+  const [error, setError]           = useState('');
+
+  const availablePlatforms = SOCIAL_PLATFORMS.filter((p) => !(p in social));
+
+  function updSocial(key, url) { upd('social', { ...social, [key]: url }); }
+
+  function removeSocial(key) {
+    const { [key]: _removed, ...rest } = social;
+    upd('social', rest);
+  }
+
+  function addSocial() {
+    const rawKey = platform === '__custom' ? customName : platform;
+    const key = rawKey.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    let url = newUrl.trim();
+
+    if (!key)            { setError('Please choose a platform.'); return; }
+    if (key in social)   { setError(`"${key}" is already in your list.`); return; }
+    if (!url)            { setError('Please enter the link.'); return; }
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+    upd('social', { ...social, [key]: url });
+    setPlatform('');
+    setCustomName('');
+    setNewUrl('');
+    setError('');
+  }
+
   return (
     <>
       <SectionCard title="Contact details" icon="✉️">
         <div style={S.grid2}>
           <Field label="Email address" value={c.email} onChange={(v) => upd('email', v)} type="email" />
-          <Field label="Phone number" value={c.phone} onChange={(v) => upd('phone', v)} placeholder="+94 77 000 0000" />
+          <Field
+            label={`Phone number (max ${MAX_PHONE_DIGITS} digits)`}
+            value={c.phone}
+            onChange={(v) => upd('phone', sanitizePhone(v, { allowPlus: true }))}
+            placeholder="+94 77 000 0000"
+            inputMode="tel"
+            maxLength={MAX_PHONE_DIGITS + 6}
+          />
         </div>
         <Field label="Intro paragraph" value={c.intro} onChange={(v) => upd('intro', v)} textarea />
       </SectionCard>
+
       <SectionCard title="Social links" icon="🔗">
-        <div style={S.grid2}>
-          {Object.entries(c.social).map(([platform, url]) => (
-            <div key={platform}>
-              <label style={S.label}>
-                {platform === 'facebook' ? '📘' : platform === 'twitter' ? '🐦' : platform === 'youtube' ? '📺' : '🎯'}{' '}
-                {platform.charAt(0).toUpperCase() + platform.slice(1)}
-              </label>
-              <input style={S.input} value={url} onChange={(e) => updSocial(platform, e.target.value)} placeholder="https://..." />
-            </div>
-          ))}
+        {Object.keys(social).length === 0 && (
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+            No social links yet. Add one below.
+          </p>
+        )}
+
+        {Object.entries(social).map(([key, url]) => (
+          <div key={key} style={S.itemRow}>
+            <span style={{ fontWeight: 600, fontSize: '0.85rem', minWidth: '90px', flex: '0 0 auto', color: 'var(--text-primary)' }}>
+              {capitalize(key)}
+            </span>
+            <input
+              style={{ ...S.input, marginBottom: 0, flex: 1, minWidth: 0 }}
+              value={url}
+              onChange={(e) => updSocial(key, e.target.value)}
+              placeholder="https://..."
+            />
+            <button style={S.deleteBtn} onClick={() => removeSocial(key)} title="Remove">×</button>
+          </div>
+        ))}
+
+        <div style={{ marginTop: '1rem', padding: '14px', background: 'var(--bg-color)', border: '1px dashed var(--accent-color)', borderRadius: '10px' }}>
+          <label style={S.label}>Add a social link</label>
+
+          <select
+            style={S.select}
+            value={platform}
+            onChange={(e) => { setPlatform(e.target.value); setError(''); }}
+          >
+            <option value="">— Select platform —</option>
+            {availablePlatforms.map((p) => <option key={p} value={p}>{capitalize(p)}</option>)}
+            <option value="__custom">Other (type icon name)…</option>
+          </select>
+
+          {platform === '__custom' && (
+            <>
+              <input
+                style={S.input}
+                value={customName}
+                onChange={(e) => { setCustomName(e.target.value); setError(''); }}
+                placeholder="Font Awesome brand name, e.g. spotify"
+              />
+            </>
+          )}
+
+          <input
+            style={S.input}
+            value={newUrl}
+            onChange={(e) => { setNewUrl(e.target.value); setError(''); }}
+            placeholder="https://..."
+          />
+
+          {error && (
+            <p style={{ color: '#e74c3c', fontSize: '0.8rem', fontWeight: 600, marginBottom: '10px' }}>⚠️ {error}</p>
+          )}
+
+          <button style={S.addBtn} onClick={addSocial}>+ Add link</button>
         </div>
       </SectionCard>
     </>
+  );
+}
+
+// ─── TAB: SECTIONS (show / hide) ─────────────────────────────────────────────
+function SectionsTab({ data, set }) {
+  const sections = data.sections || {};
+  const isOn = (id) => sections[id] !== false; // missing = visible
+  const toggle = (id, val) => set('sections', { ...sections, [id]: val });
+
+  return (
+    <SectionCard title="Section visibility" icon="👁️">
+      <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+        Turn a section off to hide it from the public website. Changes show in the live preview instantly and go live after you click Save Changes.
+      </p>
+      {SECTION_LIST.map(s => (
+        <div key={s.id} style={{ ...S.itemRow, justifyContent: 'space-between' }}>
+          <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>{s.label}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '0.75rem', color: isOn(s.id) ? '#27ae60' : 'var(--text-secondary)', fontWeight: 600 }}>
+              {isOn(s.id) ? 'Visible' : 'Hidden'}
+            </span>
+            <Toggle checked={isOn(s.id)} onChange={(v) => toggle(s.id, v)} label={`Show ${s.label} section`} />
+          </div>
+        </div>
+      ))}
+    </SectionCard>
   );
 }
 
@@ -893,6 +1095,12 @@ export default function Dashboard({ token }) {
   const [tab, setTab]         = useState('hero');
   const [msg, setMsg]         = useState('');
   const [msgType, setMsgType] = useState('ok');
+
+  // Live preview state
+  const [showPreview, setShowPreview] = useState(false);
+  const iframeRef = useRef(null);
+  const dataRef   = useRef(null);
+  dataRef.current = data;
 
   // Tracks unsaved edits so an automatic reload never overwrites them
   const dirtyRef = useRef(false);
@@ -947,6 +1155,44 @@ export default function Dashboard({ token }) {
     return () => window.removeEventListener('focus', onFocus);
   }, [loadPortfolioData]);
 
+  // ── Live preview wiring (hooks must stay above the early return below) ──
+  const sendPreview = useCallback(() => {
+    const win = iframeRef.current?.contentWindow;
+    if (!win || !dataRef.current) return;
+    win.postMessage({ type: 'PORTFOLIO_PREVIEW', data: dataRef.current }, window.location.origin);
+  }, []);
+
+  // Open the preview by default on wide screens only
+  useEffect(() => {
+    if (window.innerWidth >= 1100) setShowPreview(true);
+  }, []);
+
+  // Push every change to the iframe (debounced)
+  useEffect(() => {
+    if (!data || !showPreview) return;
+    const t = setTimeout(sendPreview, 150);
+    return () => clearTimeout(t);
+  }, [data, showPreview, sendPreview]);
+
+  // The iframe announces when it is ready to receive data
+  useEffect(() => {
+    function onMsg(e) {
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.type === 'PREVIEW_READY') sendPreview();
+    }
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, [sendPreview]);
+
+  // Scroll the preview to the section being edited
+  useEffect(() => {
+    if (!showPreview || tab === 'sections') return;
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'PORTFOLIO_SCROLL', section: tab },
+      window.location.origin
+    );
+  }, [tab, showPreview]);
+
   function set(key, value) { dirtyRef.current = true; setData(d => ({ ...d, [key]: value })); }
   function setArr(key, index, field, value) {
     dirtyRef.current = true;
@@ -979,30 +1225,66 @@ export default function Dashboard({ token }) {
     { id: 'stats', label: 'Stats' }, { id: 'skills', label: 'Skills' },
     { id: 'experience', label: 'Experience' }, { id: 'volunteer', label: 'Volunteer' },
     { id: 'projects', label: 'Projects' }, { id: 'contact', label: 'Contact' },
+    { id: 'sections', label: 'Sections' },
   ];
 
   return (
     <div style={S.page}>
       <div style={S.header}>
         <h1 style={S.h1}>Portfolio <span style={S.accent}>CMS</span></h1>
+        <button style={S.btnOutline} onClick={() => setShowPreview(p => !p)}>
+          {showPreview ? '🙈 Hide preview' : '👁️ Show preview'}
+        </button>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <div style={{ ...S.tabRow, minWidth: 'max-content' }}>
-          {TABS.map(t => <button key={t.id} style={S.tab(tab === t.id)} onClick={() => setTab(t.id)}>{t.label}</button>)}
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        {/* ── Editor column ── */}
+        <div style={{ flex: '1 1 520px', minWidth: 0 }}>
+          <div style={{ overflowX: 'auto' }}>
+            <div style={{ ...S.tabRow, minWidth: 'max-content' }}>
+              {TABS.map(t => <button key={t.id} style={S.tab(tab === t.id)} onClick={() => setTab(t.id)}>{t.label}</button>)}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }} />
+
+          {tab === 'hero'       && <HeroTab       data={data} set={set} token={token} />}
+          {tab === 'about'      && <AboutTab      data={data} set={set} token={token} />}
+          {tab === 'stats'      && <StatsTab      data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
+          {tab === 'skills'     && <SkillsTab     data={data} set={set} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
+          {tab === 'experience' && <ExperienceTab data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
+          {tab === 'volunteer'  && <VolunteerTab  data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
+          {tab === 'projects'   && <ProjectsTab   data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
+          {tab === 'contact'    && <ContactTab    data={data} set={set} />}
+          {tab === 'sections'   && <SectionsTab   data={data} set={set} />}
         </div>
+
+        {/* ── Live preview column ── */}
+        {showPreview && (
+          <div style={{
+            flex: '1 1 420px', minWidth: 0, position: 'sticky', top: '12px',
+            height: 'calc(100vh - 150px)', minHeight: '420px',
+            border: '1px solid var(--border-color)', borderRadius: '10px', overflow: 'hidden',
+            background: 'var(--card-bg)', display: 'flex', flexDirection: 'column',
+          }}>
+            <div style={{
+              padding: '8px 14px', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '1px', color: 'var(--accent-color)', borderBottom: '1px solid var(--border-color)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <span>Live preview</span>
+              <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>unsaved changes shown</span>
+            </div>
+            <iframe
+              ref={iframeRef}
+              src="/?preview=1"
+              title="Live preview"
+              onLoad={sendPreview}
+              style={{ flex: 1, width: '100%', border: 'none', background: '#fff' }}
+            />
+          </div>
+        )}
       </div>
-
-      <div style={{ marginBottom: '1.5rem' }} />
-
-      {tab === 'hero'       && <HeroTab       data={data} set={set} token={token} />}
-      {tab === 'about'      && <AboutTab      data={data} set={set} token={token} />}
-      {tab === 'stats'      && <StatsTab      data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
-      {tab === 'skills'     && <SkillsTab     data={data} set={set} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
-      {tab === 'experience' && <ExperienceTab data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
-      {tab === 'volunteer'  && <VolunteerTab  data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
-      {tab === 'projects'   && <ProjectsTab   data={data} setArr={setArr} removeArr={removeArr} addArr={addArr} />}
-      {tab === 'contact'    && <ContactTab    data={data} set={set} />}
 
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '12px 16px', background: 'var(--card-bg)', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px', zIndex: 200 }}>
         {/* Save message appears right next to the button */}

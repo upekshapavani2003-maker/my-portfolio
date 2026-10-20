@@ -1,10 +1,39 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import PortfolioSection from './components/PortfolioSection';
 import ColorSwitcher from './components/ColorSwitcher';
 
 const SITE_KEY = '6LfLl6QtAAAAAH9swtIZuM4o1qetPSXnAqTGn5HV';
+
+// Missing = visible. Only an explicit `false` hides a section.
+const isOn = (d, id) => d?.sections?.[id] !== false;
+
+// Which pages of the site are hidden, based on the CMS toggles.
+// home = Hero, about = About/Stats/Skills/Experience/Volunteer, portfolio = Projects, contact = Contact
+function getHiddenNav(d) {
+  const aboutGroup = ['about', 'stats', 'skills', 'experience', 'volunteer'];
+  return {
+    home:      !isOn(d, 'hero'),
+    about:     aboutGroup.every((id) => !isOn(d, id)),
+    portfolio: !isOn(d, 'projects'),
+    contact:   !isOn(d, 'contact'),
+  };
+}
+
+// CMS tab id -> which page of the site it lives on
+const TAB_TO_PAGE = {
+  hero: 'home',
+  about: 'about', stats: 'about', skills: 'about', experience: 'about', volunteer: 'about',
+  projects: 'portfolio',
+  contact: 'contact',
+};
+
+// CMS tab id -> element id to scroll to inside that page
+const TAB_TO_ELEMENT = {
+  hero: 'home', about: 'about', stats: 'stats', skills: 'skills',
+  experience: 'experience', volunteer: 'volunteer', projects: 'portfolio', contact: 'contact',
+};
 
 export default function Home() {
   const [data, setData]                 = useState(null);
@@ -13,11 +42,14 @@ export default function Home() {
   const [captchaToken, setCaptchaToken] = useState('');
   const [captchaError, setCaptchaError] = useState(false);
 
+  // True once the CMS preview has sent data, so a late fetch never overwrites it
+  const gotPreview = useRef(false);
+
   useEffect(() => {
     // Load portfolio data
     fetch('/api/portfolio', { cache: 'no-store' })
       .then(r => r.json())
-      .then(setData);
+      .then(d => { if (!gotPreview.current) setData(d); });
 
     // Register global reCAPTCHA callbacks
     window.onCaptchaSuccess = (token) => {
@@ -57,6 +89,54 @@ export default function Home() {
       delete window.onCaptchaExpired;
     };
   }, []);
+
+  // ── Live preview: only active when this page is inside the CMS iframe ──────
+  useEffect(() => {
+    const isPreview =
+      new URLSearchParams(window.location.search).get('preview') === '1' &&
+      window.parent !== window;
+    if (!isPreview) return;
+
+    function onMessage(e) {
+      if (e.origin !== window.location.origin) return;
+
+      if (e.data?.type === 'PORTFOLIO_PREVIEW') {
+        gotPreview.current = true;
+        setData(e.data.data);
+      }
+
+      if (e.data?.type === 'PORTFOLIO_SCROLL') {
+        const tab  = e.data.section;
+        const page = TAB_TO_PAGE[tab];
+        if (!page) return;
+        setActive(page);
+        // wait for the page to become visible, then scroll to the exact block
+        setTimeout(() => {
+          const el = document.getElementById(TAB_TO_ELEMENT[tab]);
+          if (el && tab !== 'about' && tab !== 'hero') {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }, 120);
+      }
+    }
+
+    window.addEventListener('message', onMessage);
+    // tell the CMS we are ready to receive data
+    window.parent.postMessage({ type: 'PREVIEW_READY' }, window.location.origin);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  // If the page being viewed gets hidden, jump to the first visible one
+  useEffect(() => {
+    if (!data) return;
+    const hidden = getHiddenNav(data);
+    if (hidden[active]) {
+      const first = ['home', 'about', 'portfolio', 'contact'].find((id) => !hidden[id]);
+      if (first) setActive(first);
+    }
+  }, [data, active]);
 
   function navigate(sectionId) {
     setActive(sectionId);
@@ -122,6 +202,18 @@ export default function Home() {
 
   const { hero, about, stats, skills, experience, contact } = data;
 
+  // ── section visibility (from the CMS "Sections" tab) ─────────────────────
+  const show         = (id) => isOn(data, id);
+  const hiddenNav    = getHiddenNav(data);
+  const hasVolunteer = Array.isArray(data.volunteer) && data.volunteer.length > 0;
+
+  const showAboutInfo = show('about');
+  const showStats     = show('stats');
+  const showAboutRow  = showAboutInfo || showStats;
+  const showSkills    = show('skills');
+  const showExp       = show('experience');
+  const showVol       = show('volunteer') && hasVolunteer;
+
   // ── helpers ───────────────────────────────────────────────────────────────
   function renderLanguages(langs) {
     if (!langs) return '—';
@@ -162,7 +254,11 @@ export default function Home() {
   return (
     <>
       <ColorSwitcher />
-      <Navbar activeSection={active} onNavigate={navigate} />
+      <Navbar
+        activeSection={active}
+        onNavigate={navigate}
+        hiddenSections={hiddenNav}
+      />
 
       {/* ── Popup notification ── */}
       {(formStatus === 'success' || formStatus === 'error') && (
@@ -233,238 +329,261 @@ export default function Home() {
       <main className="content-wrapper">
 
         {/* ===== HOME ===== */}
-        <section id="home"
-          className={`portfolio-section ${active==='home' ? 'active' : ''}`}>
-          <div className="hero-container">
-            <div className="hero-image-box">
-              <img src={hero.photo} alt={hero.name} />
+        {show('hero') && (
+          <section id="home"
+            className={`portfolio-section ${active==='home' ? 'active' : ''}`}>
+            <div className="hero-container">
+              <div className="hero-image-box">
+                <img src={hero.photo} alt={hero.name} />
+              </div>
+              <div className="hero-text-box">
+                <h1>I'm {hero.name}.{' '}
+                  <span className="accent-text">{hero.role}</span>
+                </h1>
+                <p>{hero.description}</p>
+                {!hiddenNav.about && (
+                  <button className="cta-button" onClick={() => navigate('about')}>
+                    More About Me <i className="fas fa-arrow-right"></i>
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="hero-text-box">
-              <h1>I'm {hero.name}.{' '}
-                <span className="accent-text">{hero.role}</span>
-              </h1>
-              <p>{hero.description}</p>
-              <button className="cta-button" onClick={() => navigate('about')}>
-                More About Me <i className="fas fa-arrow-right"></i>
-              </button>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* ===== ABOUT ===== */}
-        <section id="about"
-          className={`portfolio-section ${active==='about' ? 'active' : ''}`}>
-          <div className="title-container">
-            <h1 className="section-title">About <span className="accent-text">Me</span></h1>
-            <span className="bg-watermark">Resume</span>
-          </div>
-          <div className="about-main-container">
-            <div className="about-grid-row">
-              <div className="personal-info-col">
-                <h3>Personal Infos</h3>
-                <div className="info-list-split">
-                  <div className="info-left">
-                    <p>First Name: <strong>{about.firstName}</strong></p>
-                    <p>Last Name: <strong>{about.lastName}</strong></p>
-                    <p>Age: <strong>{about.age}</strong></p>
-                    {about.gender && <p>Gender: <strong>{about.gender}</strong></p>}
-                    <p>Nationality: <strong>{about.nationality}</strong></p>
-                    <p>Freelance: <strong>{about.freelance}</strong></p>
-                  </div>
-                  <div className="info-right">
-                    <p>Address: <strong>{renderAddress(about)}</strong></p>
-                    <p>Phone: <strong>{renderPhone(about)}</strong></p>
-                    <p>Email: <strong>{about.email}</strong></p>
-                    {about.skype && <p>Skype: <strong>{about.skype}</strong></p>}
-                    <p>Languages: <strong>{renderLanguages(about.languages)}</strong></p>
-                  </div>
-                </div>
-
-                {/* ✅ UPDATED: simple link to /api/cv (no target="_blank", no download attribute) */}
-                <a
-                  href="/api/cv"
-                  className="download-cv-btn">
-                  <span className="btn-text">Download CV</span>
-                  <span className="btn-icon-circle">
-                    <i className="fas fa-download"></i>
-                  </span>
-                </a>
-              </div>
-
-              <div className="stats-cards-col">
-                {stats.map((s, i) => (
-                  <div key={i} className="stat-box">
-                    <h2>{s.number}<sup>+</sup></h2>
-                    <p><span className="dash-line"></span>{s.label}</p>
-                  </div>
-                ))}
-              </div>
+        {!hiddenNav.about && (
+          <section id="about"
+            className={`portfolio-section ${active==='about' ? 'active' : ''}`}>
+            <div className="title-container">
+              <h1 className="section-title">About <span className="accent-text">Me</span></h1>
+              <span className="bg-watermark">Resume</span>
             </div>
+            <div className="about-main-container">
 
-            <hr className="section-separator" />
-
-            <div className="skills-section-wrapper">
-              <h3 className="subsection-title">My Skills</h3>
-              <div className="circular-skills-grid">
-                {skills.map((s, i) => (
-                  <div key={i} className="skill-item">
-                    <div className="circle-progress" style={{ '--percent': s.percent }}>
-                      <div className="inner-val">{s.percent}%</div>
-                    </div>
-                    <h4>{s.name}</h4>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <hr className="section-separator" />
-
-            <div className="timeline-section-wrapper">
-              <h3 className="subsection-title">Experience & Education</h3>
-              <div className="timeline-dual-grid">
-                <div className="timeline-column">
-                  {experience.filter(e => e.type==='work').map(e => (
-                    <div key={e.id} className="timeline-node">
-                      <div className="icon-badge">
-                        <i className="fas fa-briefcase"></i>
+              {showAboutRow && (
+                <div className="about-grid-row">
+                  {showAboutInfo && (
+                    <div className="personal-info-col">
+                      <h3>Personal Infos</h3>
+                      <div className="info-list-split">
+                        <div className="info-left">
+                          <p>First Name: <strong>{about.firstName}</strong></p>
+                          <p>Last Name: <strong>{about.lastName}</strong></p>
+                          <p>Age: <strong>{about.age}</strong></p>
+                          {about.gender && <p>Gender: <strong>{about.gender}</strong></p>}
+                          <p>Nationality: <strong>{about.nationality}</strong></p>
+                          <p>Freelance: <strong>{about.freelance}</strong></p>
+                        </div>
+                        <div className="info-right">
+                          <p>Address: <strong>{renderAddress(about)}</strong></p>
+                          <p>Phone: <strong>{renderPhone(about)}</strong></p>
+                          <p>Email: <strong>{about.email}</strong></p>
+                          {about.skype && <p>Skype: <strong>{about.skype}</strong></p>}
+                          <p>Languages: <strong>{renderLanguages(about.languages)}</strong></p>
+                        </div>
                       </div>
-                      <span className="time-stamp">{e.period}</span>
-                      <h5>{e.role} <span className="place-tag">— {e.place}</span></h5>
-                      <p>{e.desc}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="timeline-column">
-                  {experience.filter(e => e.type==='education').map(e => (
-                    <div key={e.id} className="timeline-node">
-                      <div className="icon-badge">
-                        <i className="fas fa-graduation-cap"></i>
-                      </div>
-                      <span className="time-stamp">{e.period}</span>
-                      <h5>{e.role} <span className="place-tag">— {e.place}</span></h5>
-                      <p>{e.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
 
-            {data.volunteer && data.volunteer.length > 0 && (
-              <>
-                <hr className="section-separator" />
-                <div className="volunteer-section-wrapper">
-                  <h3 className="subsection-title">Volunteer Work</h3>
-                  <div className="volunteer-grid">
-                    <div className="timeline-column">
-                      {data.volunteer.map(v => (
-                        <div key={v.id} className="timeline-node">
-                          <div className="icon-badge">
-                            <i className="fas fa-hands-helping"></i>
+                      {/* simple link to /api/cv (no target="_blank", no download attribute) */}
+                      <a
+                        href="/api/cv"
+                        className="download-cv-btn">
+                        <span className="btn-text">Download CV</span>
+                        <span className="btn-icon-circle">
+                          <i className="fas fa-download"></i>
+                        </span>
+                      </a>
+                    </div>
+                  )}
+
+                  {showStats && (
+                    <div id="stats" className="stats-cards-col">
+                      {stats.map((s, i) => (
+                        <div key={i} className="stat-box">
+                          <h2>{s.number}<sup>+</sup></h2>
+                          <p><span className="dash-line"></span>{s.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {showSkills && (
+                <>
+                  {showAboutRow && <hr className="section-separator" />}
+                  <div id="skills" className="skills-section-wrapper">
+                    <h3 className="subsection-title">My Skills</h3>
+                    <div className="circular-skills-grid">
+                      {skills.map((s, i) => (
+                        <div key={i} className="skill-item">
+                          <div className="circle-progress" style={{ '--percent': s.percent }}>
+                            <div className="inner-val">{s.percent}%</div>
                           </div>
-                          <span className="time-stamp">{v.period}</span>
-                          <h5>{v.role} <span className="place-tag">— {v.organization}</span></h5>
-                          <p>{v.desc}</p>
+                          <h4>{s.name}</h4>
                         </div>
                       ))}
                     </div>
                   </div>
-                </div>
-              </>
-            )}
-          </div>
-        </section>
+                </>
+              )}
+
+              {showExp && (
+                <>
+                  {(showAboutRow || showSkills) && <hr className="section-separator" />}
+                  <div id="experience" className="timeline-section-wrapper">
+                    <h3 className="subsection-title">Experience & Education</h3>
+                    <div className="timeline-dual-grid">
+                      <div className="timeline-column">
+                        {experience.filter(e => e.type==='work').map(e => (
+                          <div key={e.id} className="timeline-node">
+                            <div className="icon-badge">
+                              <i className="fas fa-briefcase"></i>
+                            </div>
+                            <span className="time-stamp">{e.period}</span>
+                            <h5>{e.role} <span className="place-tag">— {e.place}</span></h5>
+                            <p>{e.desc}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="timeline-column">
+                        {experience.filter(e => e.type==='education').map(e => (
+                          <div key={e.id} className="timeline-node">
+                            <div className="icon-badge">
+                              <i className="fas fa-graduation-cap"></i>
+                            </div>
+                            <span className="time-stamp">{e.period}</span>
+                            <h5>{e.role} <span className="place-tag">— {e.place}</span></h5>
+                            <p>{e.desc}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {showVol && (
+                <>
+                  {(showAboutRow || showSkills || showExp) && <hr className="section-separator" />}
+                  <div id="volunteer" className="volunteer-section-wrapper">
+                    <h3 className="subsection-title">Volunteer Work</h3>
+                    <div className="volunteer-grid">
+                      <div className="timeline-column">
+                        {data.volunteer.map(v => (
+                          <div key={v.id} className="timeline-node">
+                            <div className="icon-badge">
+                              <i className="fas fa-hands-helping"></i>
+                            </div>
+                            <span className="time-stamp">{v.period}</span>
+                            <h5>{v.role} <span className="place-tag">— {v.organization}</span></h5>
+                            <p>{v.desc}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ===== PORTFOLIO ===== */}
-        <PortfolioSection data={data} isActive={active==='portfolio'} />
+        {show('projects') && (
+          <PortfolioSection data={data} isActive={active==='portfolio'} />
+        )}
 
         {/* ===== CONTACT ===== */}
-        <section id="contact"
-          className={`portfolio-section ${active==='contact' ? 'active' : ''}`}>
-          <div className="title-container">
-            <h1 className="section-title">Get In <span className="accent-text">Touch</span></h1>
-            <span className="bg-watermark">Contact</span>
-          </div>
-          <div className="contact-grid-wrapper">
-            <div className="contact-details-column">
-              <h3>Don't be shy !</h3>
-              <p>{contact.intro}</p>
-              <div className="meta-info-item">
-                <i className="fas fa-envelope-open icon-indicator"></i>
-                <div className="meta-text">
-                  <span className="meta-label">Mail Me</span>
-                  <a
-                    href={`https://mail.google.com/mail/?view=cm&to=${contact.email}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="meta-value">
-                    {contact.email}
-                  </a>
+        {show('contact') && (
+          <section id="contact"
+            className={`portfolio-section ${active==='contact' ? 'active' : ''}`}>
+            <div className="title-container">
+              <h1 className="section-title">Get In <span className="accent-text">Touch</span></h1>
+              <span className="bg-watermark">Contact</span>
+            </div>
+            <div className="contact-grid-wrapper">
+              <div className="contact-details-column">
+                <h3>Don't be shy !</h3>
+                <p>{contact.intro}</p>
+                <div className="meta-info-item">
+                  <i className="fas fa-envelope-open icon-indicator"></i>
+                  <div className="meta-text">
+                    <span className="meta-label">Mail Me</span>
+                    <a
+                      href={`https://mail.google.com/mail/?view=cm&to=${contact.email}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="meta-value">
+                      {contact.email}
+                    </a>
+                  </div>
+                </div>
+                <div className="meta-info-item">
+                  <i className="fas fa-phone-alt icon-indicator"></i>
+                  <div className="meta-text">
+                    <span className="meta-label">Call Me</span>
+                    <a href={`tel:${contact.phone}`} className="meta-value">
+                      {contact.phone}
+                    </a>
+                  </div>
+                </div>
+                <div className="social-links-row">
+                  {Object.entries(contact.social).map(([key, url]) => (
+                    <a key={key} href={url} target="_blank" rel="noopener noreferrer" className="social-circle-btn">
+                      <i className={`fab fa-${key === 'linkedin' ? 'linkedin-in' : key}`}></i>
+                    </a>
+                  ))}
                 </div>
               </div>
-              <div className="meta-info-item">
-                <i className="fas fa-phone-alt icon-indicator"></i>
-                <div className="meta-text">
-                  <span className="meta-label">Call Me</span>
-                  <a href={`tel:${contact.phone}`} className="meta-value">
-                    {contact.phone}
-                  </a>
-                </div>
-              </div>
-              <div className="social-links-row">
-                {Object.entries(contact.social).map(([key, url]) => (
-                  <a key={key} href={url} target="_blank" rel="noopener noreferrer" className="social-circle-btn">
-                    <i className={`fab fa-${key === 'linkedin' ? 'linkedin-in' : key}`}></i>
-                  </a>
-                ))}
+
+              <div className="contact-form-column">
+                <form className="interactive-contact-form" onSubmit={handleFormSubmit}>
+                  <div className="form-input-row">
+                    <input type="text" name="name" placeholder="YOUR NAME" required />
+                    <input type="email" name="email" placeholder="YOUR EMAIL" required />
+                    <input type="text" name="subject" placeholder="YOUR SUBJECT" required />
+                  </div>
+                  <div className="form-textarea-row">
+                    <textarea name="message" placeholder="YOUR MESSAGE" rows="6" required></textarea>
+                  </div>
+
+                  {/* ── reCAPTCHA "I'm not a robot" checkbox ── */}
+                  <div className="recaptcha-wrap">
+                    <div
+                      id="recaptcha-container"
+                      className="g-recaptcha"
+                      data-sitekey={SITE_KEY}
+                      data-callback="onCaptchaSuccess"
+                      data-expired-callback="onCaptchaExpired"
+                    ></div>
+                    {captchaError && (
+                      <p className="recaptcha-error">
+                        ⚠️ Please confirm you are not a robot.
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="cta-submit-btn"
+                    disabled={formStatus === 'sending'}
+                    style={{
+                      opacity: formStatus === 'sending' ? 0.7 : 1,
+                      cursor:  formStatus === 'sending' ? 'wait' : 'pointer',
+                    }}>
+                    <span className="btn-text">
+                      {formStatus === 'sending' ? 'Sending...' : 'Send Message'}
+                    </span>
+                    <span className="btn-icon-circle">
+                      <i className={`fas ${formStatus === 'sending' ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`}></i>
+                    </span>
+                  </button>
+                </form>
               </div>
             </div>
-
-            <div className="contact-form-column">
-              <form className="interactive-contact-form" onSubmit={handleFormSubmit}>
-                <div className="form-input-row">
-                  <input type="text" name="name" placeholder="YOUR NAME" required />
-                  <input type="email" name="email" placeholder="YOUR EMAIL" required />
-                  <input type="text" name="subject" placeholder="YOUR SUBJECT" required />
-                </div>
-                <div className="form-textarea-row">
-                  <textarea name="message" placeholder="YOUR MESSAGE" rows="6" required></textarea>
-                </div>
-
-                {/* ── reCAPTCHA "I'm not a robot" checkbox ── */}
-                <div className="recaptcha-wrap">
-                  <div
-                    id="recaptcha-container"
-                    className="g-recaptcha"
-                    data-sitekey={SITE_KEY}
-                    data-callback="onCaptchaSuccess"
-                    data-expired-callback="onCaptchaExpired"
-                  ></div>
-                  {captchaError && (
-                    <p className="recaptcha-error">
-                      ⚠️ Please confirm you are not a robot.
-                    </p>
-                  )}
-                </div>
-
-                <button
-                  type="submit"
-                  className="cta-submit-btn"
-                  disabled={formStatus === 'sending'}
-                  style={{
-                    opacity: formStatus === 'sending' ? 0.7 : 1,
-                    cursor:  formStatus === 'sending' ? 'wait' : 'pointer',
-                  }}>
-                  <span className="btn-text">
-                    {formStatus === 'sending' ? 'Sending...' : 'Send Message'}
-                  </span>
-                  <span className="btn-icon-circle">
-                    <i className={`fas ${formStatus === 'sending' ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`}></i>
-                  </span>
-                </button>
-              </form>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* ===== FOOTER ===== */}
         <footer style={{
